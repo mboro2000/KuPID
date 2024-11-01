@@ -1,0 +1,615 @@
+use std::collections::VecDeque;
+use std::hash::Hash;
+use std::io;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::io::BufRead;
+use std::thread;
+use std::fs::read_to_string;
+use std::fs;
+use std::path::Path;
+use std::io::Write;
+use bio::io::fasta;
+use num::traits::ToBytes;
+use std::time::Instant;
+
+//got hint about bam from chatGPT
+use std::str;
+use std::env;
+
+struct Exon{
+    name: String,
+    start:usize,
+    end:usize,
+    length:usize
+}
+   
+fn main() {
+
+    
+
+    let high_k = 20;
+    let low_k = 12;
+    let w:f64 = 0.2 as f64;
+    let t:i32 = 10;
+    let e = 0.014;
+
+    let s = "aaaaccccggggtttt";
+
+    //let g = FracMinHash(s, 4, 0.2);
+
+    let c = 170;
+
+    println!("{}", c);
+    println!("{}", c >> 4);
+    println!("{:#?}", c.to_le_bytes());
+
+    /*
+    println!("{}", 3 & 1);  //11   => 1
+    println!("{}", 3 & 2);  //11   => 2
+    println!("{}", 2 & 1);  //10   => 0
+    println!("{}", 2 & 2);  //10   => 2
+
+    println!("");
+    println!("{}", 42 & (1));
+    println!("{}", 42 & (1 << 1));  //2
+    println!("{}", 42 & (1 << 2));
+    println!("{}", 42 & (1 << 3));  //8
+    println!("{}", 42 & (1 << 5));  //32
+    println!("{}", (42 & (1 << 5)) >> 5);  //1
+
+    println!("{}", -1 & -1);    //-1
+    println!("{}", 1 & -1);    //1
+    println!("{}", -1 & -2);    //-2
+    println!("{}", 1 & -2);    //0
+    println!("{}", (-3 & (1 << 31)) >> 31);    //-1
+    println!("{}", (-2 & (1 << 31)) >> 31);    //-1
+    println!("{}", (3 & (1 << 31)) >> 31);    //0
+    println!("{}", (-76 & (1 << 31)) >> 31);    //-1
+    */
+
+    println!("{}", (10 & 255));
+    println!("{}", (!10 & 255));
+
+    let old = 10;
+    let new = 169;
+    let mut majority = 42;
+    let mut adv = 2;
+
+    let old_same_new = ((old & 255) & (new & 255)) | ((!old & 255) & (!new & 255));
+    println!("{}", old_same_new);
+
+    let check_1 = 1;
+    let mut to_add:Vec<i32> = Vec::new();
+    let mut to_sub:Vec<i32> = Vec::new();
+    let mut mask = 1;
+
+    println!("");
+    println!("");
+
+    for i in 0..8{
+
+        if ((old_same_new & (mask << i)) >> i) == 1 {
+            let orig = (adv & (3 << (2*i)));
+            let a_bit = orig >> (2*i);
+            
+            if a_bit == 1{
+                majority = ((!(majority >> (i)) & 1) << i) + (majority & !(1 << i));
+            }
+            else{
+                let s = (!a_bit & 3) + 2;
+                adv -= orig;
+                adv += (!s & 3) << (2*i);
+
+                println!("{}", adv);
+            }
+        }
+
+        
+
+        /*
+        get mask value for the bit
+       s = get opposite of mask val, add 2
+       adv - orig val + (opposite of s)
+        
+         */
+
+
+        else{
+
+            //adv += (1 << 1) << (i * (2));
+        }
+    }
+
+    //(same 0 bits btw old and maj) | (same 1 bits btw old and maj)
+
+    //max advantage = # of neighbors in the set
+    //max 7 neighbors => 3 bits
+
+    //let advantage be 64 bit
+    //each neighbor can have max length of 21 bits => 10 nucleotides
+
+    /*
+    PLAN
+    ~ keep array for advantage bits
+
+    ~ get the bits where old row = new row
+    ~ apply to bits where old != new:
+        if old != majority bits:
+            adv += 2
+        if old == majority bits:
+            if adv = 1, flip the majority bit
+            else: adv -= 2
+
+    add 2 to adv for bit i:
+        (1 << 1) << (i * (size for storing advantage bit))
+
+    subtract 2 to adv for bit i:
+        get mask value for the bit
+       s = get opposite of mask val, add 2
+       adv - orig val + (opposite of s)
+    
+     */
+    
+
+    /*
+    let mut all:VecDeque<VecDeque<i32>> = VecDeque::new();
+    let e1:VecDeque<i32> = VecDeque::from([-1, -1, -1, -1, 1, -1, 1, -1]);
+    let e2:VecDeque<i32> = VecDeque::from([-1, -1, 1, -1, 1, -1, 1, -1]);
+    let e3:VecDeque<i32> = VecDeque::from([1, -1, 1, -1, 1, -1, 1, -1]);
+
+    println!("{:#?}", e1 + e2);
+
+    let mut last = e3.clone();
+
+    all.push_back(e1);
+    all.push_back(e2);
+    all.push_back(e3);
+    */
+        
+
+    //println!("{:#?}", all);
+
+    //println!("{:#?}", all.pop_front().expect("msg"));
+
+
+    /*
+    let now = Instant::now();
+
+    env::set_var("RUST_BACKTRACE", "1");
+
+    iso_sets(high_k, low_k, w, e);
+
+    let elapsed = now.elapsed();
+    println!("Elapsed: {:.2?}", elapsed);
+    */
+}
+
+fn read_annotation() -> (HashMap<String, HashSet<String>>, HashMap<String, HashSet<String>>, HashMap<String, HashSet<String>>, HashMap<String, String>, HashSet<String>){
+    let mut exons_per_gene:HashMap<String, HashSet<String>> = HashMap::new();
+    let mut isos_per_gene:HashMap<String, HashSet<String>> = HashMap::new();
+    let mut exons_per_iso:HashMap<String, HashSet<String>> = HashMap::new();
+    let mut exon_seqs:HashMap<String, String> = HashMap::new();
+    let mut known_isoforms:HashSet<String> = HashSet::new();
+
+    let mut e_count = 0;
+
+    for i in 0..1{
+        let p = "sub_vM25_exons.fasta";
+        let read_results = fasta::Reader::from_file(p);
+        for reader in read_results{
+            for result in reader.records(){
+
+                println!("{}", e_count);
+                e_count += 1;
+            
+                let record = result.expect("Error during fasta record parsing");
+                let seq = str::from_utf8(record.seq()).unwrap();
+                exon_seqs.entry(record.id().to_string()).or_insert(seq.to_string());
+          
+            }
+        }   
+    }
+
+    println!("Read exon seqs");
+
+    let mut unique_exons:HashSet<String> = HashSet::new();
+
+    for i in 0..1{
+        let p = "sub_known_vM25_annotation.csv";
+        let s = read_to_string(p).unwrap();
+        let lines = s.lines();
+        for line in lines{
+            let cols = line.split(",").collect::<Vec<&str>>();
+            
+            let gene = cols[0].to_string();
+            let iso = cols[1].to_string();
+            let exon = cols[2].to_string();
+
+            if gene != "gene"{
+                let start:i32 = cols[3].parse().expect("invalid");
+                let end:i32 = cols[4].parse().expect("invalid");
+                
+                known_isoforms.insert(cols[1].to_string());
+
+                exons_per_gene.entry(gene.clone()).or_insert(HashSet::new()).insert(exon.clone());
+                exons_per_iso.entry(iso.clone()).or_insert(HashSet::new()).insert(exon.clone());
+                isos_per_gene.entry(gene.clone()).or_insert(HashSet::new()).insert(iso.clone());
+
+            }         
+        }
+    }
+
+    println!("read annotation data");
+
+    (exons_per_gene, exons_per_iso, isos_per_gene, exon_seqs, known_isoforms)
+
+}
+
+
+//Returns a unique number to represent the string *s
+fn dna_encode(first:&str, last:&str, prev:i32, p0:i32, pw:i32) -> (i32, i32){
+        
+    let mut label= 0;
+    let mut p = -1;
+
+    if "A" == first || "a" == first{
+        p = 0;
+    }
+    else if "C" == first || "c" == first {
+        p = 1;
+    }
+    else if "G" == first || "g" == first {
+        p = 2;
+    }
+    else if "T" == first || "t" == first {
+        p = 3;
+    }
+
+    label = prev - (p0 << (pw << 1));
+    label = label << 2;
+        
+    if "A" == last || "a" == last{
+        label += 0;
+    }
+    else if "C" == last || "c" == last {
+        label +=  1;
+    }
+    else if "G" == last || "g" == last {
+        label += 2;
+    }
+    else if "T" == last || "t" == last {
+        label +=  3;
+    }
+
+    (label, p)
+        
+}
+
+//Returns a table of minimizers selected using the FracMinHash method
+//table = <score of minimizer m, set of positions where m is located in the sequence>
+//fn FracMinHash(seq:&String, seq_len:i32, k:u32, s:f64, add_on:i32) -> HashMap<i32, HashSet<i32>> {
+fn FracMinHash(seq:&str, k:i32, s:f64) -> HashSet<i32> {
+    let mut H = 1;
+    for i in 0..k{
+        H << 2;
+    }
+    
+    H -= 1;
+    let Hs: f64 = H as f64 * s;
+
+    let rounds = (seq.len() as i32 - k + 1);
+
+    let mut table:HashSet<i32> = HashSet::new();
+
+
+    let mut label:i32 = 0;
+    let s = &seq[0 .. k as usize];
+
+    for item in s.chars() {
+        label  = label << 2;
+
+        if 'A' == item || 'a' == item{
+            label += 0;
+        }
+        else if 'C' == item || 'c' == item {
+            label += 1;
+        }
+        else if 'G' == item || 'g' == item {
+            label += 2;
+        }
+        else if 'T' == item || 't' == item {
+            label += 3;
+        }
+    }
+
+    if label as f64 <= Hs{
+        table.insert(label);
+    }
+
+    let first = &seq[0..1];
+    let mut prev:i32 = label;
+    let mut p0:i32 = 0;
+
+    if "A" == first || "a" == first{
+        p0 = 0;
+    }
+    else if "C" == first || "c" == first {
+        p0 = 1;
+    }
+    else if "G" == first || "g" == first {
+        p0 = 2;
+    }
+    else if "T" == first || "t" == first {
+        p0 = 3;
+    }
+
+    for i in 1..rounds{
+        let (score, p) = dna_encode(&seq[i as usize ..(i+1) as usize], &seq[(i+k-1) as usize .. (i+k) as usize], prev, p0, k-1);
+        prev = score;
+        p0 = p;
+
+        println!("{}", score);
+
+        if score as f64 <= Hs{
+            table.insert(score);
+        }
+       
+    }
+    table
+}
+
+fn create_iso_min(high_k:i32, low_k:i32, w:f64) -> (HashMap<String, HashSet<String>>, HashMap<String, HashSet<String>>, HashMap<String, HashSet<String>>, HashSet<String>, HashMap<String, String>, HashMap<String, HashMap<String, HashSet<i32>>>, HashMap<i32, HashSet<String>>){
+
+    let n:usize = 32;
+
+    let mut exon_min_data:HashMap<String, HashMap<String, HashSet<i32>>> = HashMap::new();
+
+    let (exons_per_gene, exons_per_iso, isos_per_gene, exon_seqs, known_isoforms) = read_annotation();
+    
+    let mut h_kmer_map:HashMap<i32, HashSet<String>> = HashMap::new();
+    let mut e_count = 0;
+
+    for gene in exons_per_gene.keys(){
+
+        let exons = exons_per_gene.get(gene).expect("Incorrect key").iter();
+        
+        for exon in exons{
+            if exon != "exon"{
+
+                if e_count % 1000 == 0{
+                    println!("{}", e_count);
+                }
+
+                e_count += 1;
+
+                let seq = exon_seqs.get(exon).expect("invalid exon key");
+                let mut min_data:HashMap<String, HashSet<i32>> = HashMap::new();
+                let high_min = FracMinHash(seq, high_k, w);
+                
+                for kmer in high_min.iter(){
+                    h_kmer_map.entry(*kmer).or_insert(HashSet::new()).insert(gene.clone());
+                }
+
+                min_data.insert("high k".to_string(), high_min);
+                min_data.insert("low k".to_string(), FracMinHash(seq, low_k, w));              
+        
+                exon_min_data.insert(exon.clone(), min_data);
+            }
+        }
+
+    }
+
+    println!("read exon minimizers");
+    (exons_per_gene, exons_per_iso, isos_per_gene, known_isoforms, exon_seqs, exon_min_data, h_kmer_map)
+
+}
+
+fn iso_sets(high_k:i32, low_k:i32, w:f64, e:f64){
+
+    let (exons_per_gene, exons_per_iso, isos_per_gene, known_isoforms, exon_seqs, exon_min_data, h_kmer_map) = create_iso_min(high_k, low_k, w);
+
+    let FP = 0.11;
+
+    let mut num_novel = 0;
+
+    let mut orig_gene_matches:Vec<i32> = Vec::new();
+    let mut false_gene_matches:Vec<i32> = Vec::new();
+
+    let mut correct_jaccard:Vec<f32> = Vec::new();
+    let mut novel_jaccard:Vec<f32> = Vec::new();
+
+    let mut correct_weighted_jaccard:Vec<f32> = Vec::new();
+    let mut novel_weighted_jaccard:Vec<f32> = Vec::new();
+
+    let mut group_count = 0;
+
+    let mut i_count = 0;
+
+    let mut iso_found:HashSet<String> = HashSet::new();
+
+    let mut total_reads = 0;
+    let mut no_gene_match = 0;
+    let mut novel_wo_gene = 0;
+
+    
+
+    let novel_p = "novel_candidates_PacSequel.csv";
+    let novel = Path::new(&novel_p);
+
+    let mut novel_line = "".to_string();
+
+
+    let mut novel_found:HashSet<String> = HashSet::new();
+
+    let read_results = fasta::Reader::from_file("sim_reads_P6C4.fa");
+
+    
+    let c_p = "KMER_DETECT_annotated_weighted_P6C4_high".to_string() + &high_k.to_string() + "_w" + &w.to_string() + ".csv";
+    let d_p = "KMER_DETECT_novel_weighted_P6C4_high".to_string() + &high_k.to_string() + "_w" + &w.to_string() + ".csv";
+
+    let c = Path::new(&c_p);
+    let d = Path::new(&d_p);
+
+    let mut c_line = "jaccard\n".to_string();
+    let mut d_line = "jaccard\n".to_string();
+
+    for reader in read_results{
+        for result in reader.records(){
+    
+            let record = result.expect("Error during fasta record parsing") ;
+            let seq = str::from_utf8(record.seq()).unwrap();            
+            let id = record.id();
+
+            total_reads += 1;
+
+            //let iso = id.split("_").collect::<Vec<&str>>()[0];
+            let iso = id.split("_").collect::<Vec<&str>>()[1];
+        
+            if i_count % 100 == 0{
+                println!("{}", i_count);
+            }
+
+            i_count += 1;
+            let mut min_match = 0;
+            let mut match_gene = "";
+                
+            let high_k_table = FracMinHash(seq, high_k, w);
+            let low_k_table = FracMinHash(seq, low_k, w);
+
+            iso_found.insert(iso.to_string());
+
+            if !known_isoforms.contains(iso){
+               num_novel += 1;
+            }
+
+            let mut gene_occur:HashMap<String, i32> = HashMap::new();
+            
+            for min in high_k_table.iter(){
+                if h_kmer_map.contains_key(min){
+                    for gene in h_kmer_map.get(min).expect("msg"){
+
+                        *gene_occur.entry(gene.clone()).or_insert(0) += 1;
+                    }
+                }
+            }
+
+            let mut match_gene = "";
+            let mut max_gene_match = 0;
+
+            for (gene, num_match) in gene_occur.iter(){
+                if *num_match > max_gene_match{
+                    match_gene = gene;
+                    max_gene_match = *num_match;
+                }
+            }
+
+            if match_gene == ""{
+                no_gene_match += 1;
+
+                if !known_isoforms.contains(iso){
+                    novel_wo_gene += 1;
+                    novel_found.insert(iso.to_string());
+                }                          
+
+
+                let line = ">".to_string() + id + "\n" + seq + "\n";
+
+                    novel_line.push_str(&line);
+
+            }
+
+            if match_gene != ""{
+                let mut e_matches:HashMap<String, usize> = HashMap::new();
+                let mut exon_set:HashSet<String> = HashSet::new();
+            
+                for exon in exons_per_gene.get(match_gene).expect("Incorrect key").iter(){
+
+                    if exon != "exon"{
+                        let exon_mins = exon_min_data.get(exon).expect("incorrect key").get("low k").expect("incorrect key");
+                        let inter = exon_mins.intersection(&low_k_table);
+                        let inter_len = inter.count();
+
+                        let FP_match = exon_mins.len() as f32 * FP;
+
+                        if inter_len as f32 > FP_match{
+                            e_matches.entry(exon.to_string()).or_insert(inter_len);
+                        } 
+                        else{
+                            e_matches.entry(exon.to_string()).or_insert(0);
+                        }                     
+                    }
+                }
+            
+                let mut best_weighted_jaccard:f32 = 0.0;
+
+
+                /// note: need to recalculate the iso_len variable to be the actual length of the isoform, not just the # of isoform kmers
+                /// the proportions seem to be the same, but should still do so for clarity
+
+                for isoform in isos_per_gene.get(match_gene).expect("invalid key"){
+                    let mut iso_len:usize = 0;
+                    let mut iso_inter:usize = 0;
+
+                    let read_len = low_k_table.len();
+                    
+                    for exon in exons_per_iso.get(isoform).expect("msg"){
+                        iso_len += exon_min_data.get(exon).expect("msg").get("low k").expect("msg").len();
+                        iso_inter += e_matches.get(exon).expect("msg");                       
+                    }
+
+                    //let cov = seq.len() as f32 / iso_len as f32;
+
+                    let cov = read_len as f32 / iso_len as f32;
+
+                    //let jaccard = iso_kmers.intersection(&low_k_table).count() as f32 / iso_kmers.union(&low_k_table).count() as f32;
+
+                    let weighted_jaccard = (iso_inter as f32) / (read_len + iso_len - iso_inter) as f32 * cov;
+
+
+                    if weighted_jaccard > best_weighted_jaccard{
+                        best_weighted_jaccard = weighted_jaccard;
+                    }
+                }
+
+                let l = best_weighted_jaccard.to_string() + "\n"; 
+                if known_isoforms.contains(iso){      
+                    c_line.push_str(&l);
+                }
+                else{
+                    d_line.push_str(&l);
+                }
+
+                /*
+                if best_weighted_jaccard < 1.5{
+                    let line = ">".to_string() + id + "\n" + seq + "\n";
+
+                    novel_line.push_str(&line);
+
+                    if !known_isoforms.contains(iso){
+                        novel_found.insert(iso.to_string());
+                    }
+                */
+
+            }
+        }
+    }
+
+    println!("{:#?}", known_isoforms);
+
+    //println!("Reads Processed: {}", r_count);
+    println!("Total Reads: {}", total_reads);
+    println!("Reads with no gene match: {}", no_gene_match);
+    println!("Novel reads with no gene match: {}", novel_wo_gene);
+    
+    //fs::write(novel, novel_line);
+
+    fs::write(c, c_line);
+    fs::write(d, d_line);
+      
+
+    println!("Number of Novel Transcripts: {}", num_novel);
+    println!("Number of isoforms in sample reads: {}", iso_found.len());
+    println!("Number of isoforms found in selected candidates: {}", novel_found.len())
+
+}
