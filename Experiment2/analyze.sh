@@ -28,7 +28,7 @@ for mode in guided unguided;do
 
 cd "$1/gffcompare" || { echo "Directory not found!"; exit 1; }
 ./gffcompare -r $1/reference_data/gencode.v48.annotation.gtf $1/Experiment2/$ID/all.$mode.gtf -o $1/Experiment2/$ID/gffcompare/comp_to_ref/all.$mode
-./gffcompare -r $1/reference_data/gencode.v48.annotation.gtf $1/Experiment2/$ID/all.$mode.gtf -o $1/Experiment2/$ID/gffcompare/comp_to_ref/all.$mode
+./gffcompare -r $1/novel_isoform_data/gencode.v48.as.gtf $1/Experiment2/$ID/all.$mode.gtf -o $1/Experiment2/$ID/gffcompare/comp_to_ref/all.$mode
 
 cd "$1" || { echo "Directory not found!"; exit 1; }
 python 5_29_ID_predicted_novel.py "$1/Experiment2/$ID/gffcompare/comp_to_ref/all.$mode.tracking" "$1/Experiment2/$ID/all.$mode.gtf" "$1/Experiment2/$ID/all.$mode.predicted_novel.gtf"
