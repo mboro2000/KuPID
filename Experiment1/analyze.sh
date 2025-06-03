@@ -9,12 +9,6 @@ mkdir $1/Experiment1/$ID/gffcompare/comp_to_novel
 done
 
 for s in 20 40 60 80 100;do
-./minimap2 -ax splice --MD $1/reference_data/GRCh38.primary_assembly.genome.fa $1/Experiment1/novel_samples/novel_$s%.css.fa -t 3 -o $1/Experiment1/minimap2_output/novel_$s%.sam      
-	
-samtools view -S -b $1/Experiment1/minimap2_output/novel_$s%.sam > $1/Experiment1/minimap2_output/novel_$s%.bam
-samtools sort $1/Experiment1/minimap2_output/novel_$s%.bam -o $1/Experiment1/minimap2_output/novel_$s%.sorted.bam
-samtools index $1/Experiment1/minimap2_output/novel_$s%.sorted.bam
-bedtools bamtobed -bed12 -i $1/Experiment1/minimap2_output/novel_$s%.bam > $1/Experiment1/minimap2_output/novel_$s%.bed12
 
 flair correct -q $1/Experiment1/minimap2_output/novel_$s%.bed12 -f $1/reference_data/gencode.v48.annotation.gtf -g $1/reference_data/GRCh38.primary_assembly.genome.fa --output $1/Experiment1/flair/corrected/novel_$s%
 flair collapse -g  $1/reference_data/GRCh38.primary_assembly.genome.fa -q $1/Experiment1/flair/corrected/novel_$s%_all_corrected.bed -r $1/Experiment1/novel_samples/novel_$s%.css.fa --gtf $1/reference_data/gencode.v48.annotation.gtf --output $1/Experiment1/flair/novel_$s%
