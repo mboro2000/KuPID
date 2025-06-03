@@ -2,19 +2,15 @@
 
 #arg1: ccs reads of novel transcripts
 #arg2: ccs reads of annotated transcripts
-#arg3: output directory (/usr1/mborowia/Experiment1)
+#arg3: main directory (/usr1/mborowia)
 
 # Print a welcome message
 mkdir novel_samples
-python 5_29_novel_sample.py $1 20 "$3/novel_samples"
-python 5_29_novel_sample.py $1 40 "$3/novel_samples"
-python 5_29_novel_sample.py $1 60 "$3/novel_samples"
-python 5_29_novel_sample.py $1 80 "$3/novel_samples"
-python 5_29_novel_sample.py $1 100 "$3/novel_samples"
+for s in 20 40 60 80 100;do
+python $3/Experiment1/novel_sample.py $1 $s "$3/Experiment1/novel_samples"
+done
 
 mkdir ratio_samples
-python 5_29_ratio_sample.py $1 $2 0 "$3/ratio_samples"
-python 5_29_ratio_sample.py $1 $2 1 "$3/ratio_samples"
-python 5_29_ratio_sample.py $1 $2 2 "$3/ratio_samples"
-python 5_29_ratio_sample.py $1 $2 5 "$3/ratio_samples"
-python 5_29_ratio_sample.py $1 $2 10 "$3/ratio_samples"
+for a in 0 1 2 5 10;do
+python $3/Experiment1/ratio_sample.py $1 $2 $s "$3/Experiment1/ratio_samples"
+done
