@@ -18,7 +18,7 @@ cd "$1/IsoQuant" || { echo "Directory not found!"; exit 1; }
 			
 python isoquant.py --reference $1/reference_data/GRCh38.primary_assembly.genome.fa --bam $1/Experiment2/minimap2_output/all.sorted.bam --data_type pacbio_ccs --genedb $1/reference_data/gencode.v48.annotation.gtf --threads 3 -o $1/Experiment2/IsoQuant/all.guided
 sleep(30)
-python isoquant.py --reference $1/reference_data/GRCh38.primary_assembly.genome.fa --bam $1/Experiment2/minimap2_output/all.sorted.bam --data_type pacbio_ccs -o $1/Experiment1/IsoQuant/all.unguided
+python isoquant.py --reference $1/reference_data/GRCh38.primary_assembly.genome.fa --bam $1/Experiment2/minimap2_output/all.sorted.bam --data_type pacbio_ccs -o $1/Experiment2/IsoQuant/all.unguided
 
 mv $1/Experiment2/IsoQuant/all.guided/OUT/OUT.transcript_models.gtf $1/Experiment2/IsoQuant/all.guided.gtf
 mv $1/Experiment2/IsoQuant/all.unguided/OUT/OUT.transcript_models.gtf $1/Experiment2/IsoQuant/all.unguided.gtf
@@ -31,9 +31,9 @@ cd "$1/gffcompare" || { echo "Directory not found!"; exit 1; }
 ./gffcompare -r $1/novel_isoform_data/gencode.v48.as.gtf $1/Experiment2/$ID/all.$mode.gtf -o $1/Experiment2/$ID/gffcompare/comp_to_as/all.$mode
 
 cd "$1" || { echo "Directory not found!"; exit 1; }
-python 5_29_ID_predicted_novel.py "$1/Experiment2/$ID/gffcompare/comp_to_ref/all.$mode.tracking" "$1/Experiment2/$ID/all.$mode.gtf" "$1/Experiment2/$ID/all.$mode.predicted_novel.gtf"
+python ID_predicted_novel.py "$1/Experiment2/$ID/gffcompare/comp_to_ref/all.$mode.tracking" "$1/Experiment2/$ID/all.$mode.gtf" "$1/Experiment2/$ID/all.$mode.predicted_novel.gtf"
 	
 cd "$1/gffcompare" || { echo "Directory not found!"; exit 1; }
-./gffcompare -r $1/4_10_yasim_data/4_10_25_human_p14_chr1_22.novel.gtf $1/Experiment1/$ID/novel_$s%_$mode.predicted_novel.gtf -o $1/Experiment2/$ID/gffcompare/comp_to_novel/all.$mode
+./gffcompare -r $1/novel_isoform_data/gencode.v48.novel_only.gtf $1/Experiment2/$ID/all.$mode.predicted_novel.gtf -o $1/Experiment2/$ID/gffcompare/comp_to_novel/all.$mode
 done
 done
