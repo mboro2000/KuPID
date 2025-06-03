@@ -19,3 +19,15 @@ python -m labw_utils.bioutils transcribe -f $1/reference_data/GRCh38.primary_ass
 
 #install fastaparser
 python make_transcript_file.py $1/novel_isoform_data/gencode.v48.isoform_depth.tsv $1/novel_isoform_data/gencode.v48.as.fa $1/novel_isoform_data/
+
+for type in novel annotated;do
+pbsim --strategy trans --method errhmm --errhmm data/ERRHMM-SEQUEL.model --transcript /usr1/mborowia/novel_isoform_data/$type.transcript --pass-num 10 --accuracy-mean 0.9 
+mv /usr1/mborowia/pbsim3/sd.bam /usr1/mborowia/novel_isoform_data/$type.subreads.bam 
+pbsim --strategy trans --method errhmm --errhmm data/ERRHMM-SEQUEL.model --transcript /usr1/mborowia/novel_isoform_data/$type.polyA.transcript --pass-num 10 --accuracy-mean 0.9 
+mv /usr1/mborowia/pbsim3/sd.bam /usr1/mborowia/novel_isoform_data/$type.polyA.subreads.bam;
+done
+
+#activate pb_ccs environment
+for type in novel annotated;do
+ccs $1/novel_isoform_data/$type.subreads.bam $1/novel_isoform_data/$type.ccs.bam
+done
