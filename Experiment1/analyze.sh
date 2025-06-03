@@ -28,11 +28,6 @@ mv $1/Experiment1/IsoQuant/novel_$s%_guided/OUT/OUT.transcript_models.gtf $1/Exp
 mv $1/Experiment1/IsoQuant/novel_$s%_unguided/OUT/OUT.transcript_models.gtf $1/Experiment1/IsoQuant/novel_$s%_unguided.gtf
 
 for ID in flair stringtie2 IsoQuant;do
-
-mkdir $1/Experiment1/$ID/gffcompare
-mkdir $1/Experiment1/$ID/gffcompare/comp_to_ref
-mkdir $1/Experiment1/$ID/gffcompare/comp_to_novel
-
 for mode in guided unguided;do
 
 cd "$1/gffcompare" || { echo "Directory not found!"; exit 1; }
@@ -50,13 +45,6 @@ done
 
 
 for a in 0 1 2 5 10;do
-
-./minimap2 -ax splice --MD $1/reference_data/GRCh38.primary_assembly.genome.fa $1/Experiment1/ratio_samples/ratio_1:$a.css.fa -t 3 -o $1/Experiment1/minimap2_output/ratio_1:$a.sam      
-	
-samtools view -S -b $1/Experiment1/minimap2_output/ratio_1:$a.sam > $1/Experiment1/minimap2_output/ratio_1:$a.bam
-samtools sort $1/Experiment1/minimap2_output/ratio_1:$a.bam -o $1/Experiment1/minimap2_output/ratio_1:$a.sorted.bam
-samtools index $1/Experiment1/minimap2_output/ratio_1:$a.sorted.bam
-bedtools bamtobed -bed12 -i $1/Experiment1/minimap2_output/novel_$s%.bam > $1/Experiment1/minimap2_output/ratio_1:$a.bed12
 
 flair correct -q $1/Experiment1/minimap2_output/ratio_1:$a.bed12 -f $1/reference_data/gencode.v48.annotation.gtf -g $1/reference_data/GRCh38.primary_assembly.genome.fa --output $1/Experiment1/flair/corrected/ratio_1:$a.
 flair collapse -g $1/reference_data/GRCh38.primary_assembly.genome.fa -q $1/Experiment1/flair/corrected/ratio_1:$a._all_corrected.bed -r $1/Experiment1/ratio_samples/1:$a.css.fa --gtf $1/reference_data/gencode.v48.annotation.gtf --output $1/Experiment1/flair/ratio_1:$a
