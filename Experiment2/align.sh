@@ -2,6 +2,9 @@
 
 #arg1 = main directory
 
+mkdir $1/Experiment2
+mkdir $1/Experiment2/minimap2_output
+
 cd "$1/minimap2" || { echo "Directory not found!"; exit 1; }
 
-./minimap2 -ax splice --MD ~/human_p14_chr_1_22.fa all_chr1_22.ccs.fa -t 3 -o 4_13_ccs_chr1_22_all_t3.sam
+./minimap2 -ax splice --MD $1/reference_data/GRCh38.primary_assembly.genome.fa $1/novel_isoform_data/all.ccs.fa -t 3 -o $1/minimap2_output/all.ccs.sam
