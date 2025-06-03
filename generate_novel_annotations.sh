@@ -30,4 +30,5 @@ done
 #activate pb_ccs environment
 for type in novel annotated;do
 ccs $1/novel_isoform_data/$type.subreads.bam $1/novel_isoform_data/$type.ccs.bam
+samtools bam2fq $1/novel_isoform_data/$type.ccs.bam > $1/novel_isoform_data/$type.ccs.fastq
 done
