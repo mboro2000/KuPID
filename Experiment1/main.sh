@@ -6,4 +6,4 @@ mkdir $1/Experiment1
 
 mkdir $1/Experiment1/minimap2_output
 ./align_samples.sh $1
-./analyze.sh $1
+#./analyze.sh $1
