@@ -4,10 +4,16 @@
 
 mkdir $1/reference_data
 cd $1/reference_data
-wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_48/GRCh38.p14.genome.fa.gz
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_48/gencode.v48.transcripts.fa.gz
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_48/gencode.v48.annotation.gtf.gz
 
+for s in {1..22};do
+echo $s
+wget https://ftp.ensembl.org/pub/release-114/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.$s.fa.gz
+gunzip Homo_sapiens.GRCh38.dna.chromosome.$s.fa
+done
+
+python edit_reference.py
 #release 48 of human genome via GenCode
 
 mkdir $1/novel_isoform_data
