@@ -32,7 +32,6 @@ pub fn read_input(t:i32, file:&String) -> (Vec<HashMap<String, String>>){
 }
 
 pub fn get_sketches(read_data:Vec<HashMap<String, String>>, k:i32, a:i64, s:f64, t:i32) -> Arc<RwLock<HashMap<String, Sketch>>> {
-//HashMap<String, Sketch>{
    
     let mut seq_sketches:HashMap<String, Sketch> = HashMap::new();
     let mut handles = vec![];    
@@ -67,10 +66,6 @@ pub fn get_sketches(read_data:Vec<HashMap<String, String>>, k:i32, a:i64, s:f64,
     for i in handles{
         i.join().unwrap();
     } 
-
-    //println!("Beginning to unlock");
-    //let seq_sketches = seq_sketches_shared.lock().unwrap().clone();
-    //let seq_sketches = seq_sketches_shared.lock().unwrap();
     seq_sketches_shared
 }
 
@@ -117,8 +112,7 @@ pub fn FracMinHash(seq:&str, k:i32, a:i64, s:f64) -> (i32, HashMap<i64, Vec<i32>
         let mod_score = (a*label) & max;
     
         if mod_score as f64 <= Hs{
-            kmers.entry(label).or_insert(Vec::new()).push(0); //exact position
-            //kmers.entry(label).or_insert(Vec::new()).push(ind); //ordinal position
+            kmers.entry(label).or_insert(Vec::new()).push(0);
             ind += 1;
         }
 
@@ -134,8 +128,7 @@ pub fn FracMinHash(seq:&str, k:i32, a:i64, s:f64) -> (i32, HashMap<i64, Vec<i32>
                      
             let mod_score = (a*label) & max;
             if mod_score as f64 <= Hs{
-                kmers.entry(label).or_insert(Vec::new()).push(i as i32 + 1); //exact position
-                //kmers.entry(label).or_insert(Vec::new()).push(ind); //ordinal position
+                kmers.entry(label).or_insert(Vec::new()).push(i as i32 + 1);
                 ind += 1;
             }           
         }
