@@ -26,17 +26,10 @@ pub fn create_kmer_map(ref_sketch:&HashMap<String, Sketch>, b:usize ) -> HashMap
                 to_remove.insert(*kmer);
             }
         }
-    }
-            //if kmer_map.entry(*kmer).or_insert(HashSet::new()).len() < b{
-                //kmer_map.entry(*kmer).or_insert(HashSet::new()).insert(sketch.id.clone());
-            //else{
-                //to_remove.insert(*kmer);}}
-    
+    }    
     for kmer in to_remove.iter(){
         kmer_map.remove_entry(kmer);
     }
-
-    //println!("Made kmer map");
 
     kmer_map
 }
@@ -46,18 +39,13 @@ pub fn find_ref_matches(ref_sketches_shared: Arc<RwLock<HashMap<String, Sketch>>
 
     let mut ref_map:HashMap<String, Vec<Match>> = HashMap::new(); 
     let mut criteria_1:HashMap<String, usize> = HashMap::new();
-    let mut handles = vec![];    
-    //let mut sample_chunks_shared = Arc::new(RwLock::new(sample_data.clone()));
-    //let mut ref_sketches_shared = Arc::new(RwLock::new(ref_sketches));  
+    let mut handles = vec![];     
 
     let now = Instant::now();
 
     let ref_sketches = ref_sketches_shared.read().unwrap();
-    //println!("Beginning to make the kmer map");
     let kmer_map = create_kmer_map(&ref_sketches, b);
     drop(ref_sketches);
-    let elapsed = now.elapsed();    
-    //println!("Elapsed: {:.2?}", elapsed); 
     let mut crit_1_novel = 0;
     let mut crit_1_annot = 0;
 
@@ -126,7 +114,6 @@ pub fn find_ref_matches(ref_sketches_shared: Arc<RwLock<HashMap<String, Sketch>>
                 r_count += 1;
                 if r_count % 20000 == 0{
                     //println!("Map Input read {}", r_count);
-                    //println!("Opt score: {}", opt_similarity);
                 }
                 
                 if opt_gap > m{
@@ -153,9 +140,6 @@ pub fn find_ref_matches(ref_sketches_shared: Arc<RwLock<HashMap<String, Sketch>>
     for i in handles{
         i.join().unwrap();
     } 
-    //println!("Finished Joining");
-    //let ref_map = ref_map_shared.lock().unwrap().clone();
-    //println!("Beginning to pass back");
 
     //println!("Novel w/ gaps: {}", crit_novel_shared.read().unwrap());
     //println!("Annot w/ gaps: {}", crit_annot_shared.read().unwrap());
@@ -168,8 +152,6 @@ pub fn kmer_chain(sample_kmers:&HashMap<i64, Vec<i32>>, ref_kmers:&HashMap<i64, 
     let mut g:Vec<(f32, i32, f32)> = Vec::new();  
     let mut anchors:Vec<(i32, i32)> = Vec::new();
 
-    //println!("Check is {}", check);
-
     for (kmer, pos) in sample_kmers{
         if ref_kmers.contains_key(kmer){
             for i in pos{
@@ -181,25 +163,18 @@ pub fn kmer_chain(sample_kmers:&HashMap<i64, Vec<i32>>, ref_kmers:&HashMap<i64, 
     }       
     anchors.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
 
-    //println!("Anchors length: {}", anchors.len());
-      
     for i in 0.. anchors.len(){
         let mut optimal_chain = 1.0;
         let mut optimal_gap = 0;
         let mut max_score = 1.0;
-        //let mut max_score = k as f32;
         if i == 0{
-            
             g.push((optimal_chain, optimal_gap, max_score));
         }
         else{
-            //let mut optimal_chain = g[(i-1) as usize].0;
             let mut unique_idx = 0;
             let mut l = 0;
 
             while unique_idx < check{
-            //while unique_idx < 3{
-            //while unique_idx < m{
                 let j:i32 = i as i32 - l - 1;
                 l += 1;
 
@@ -210,51 +185,16 @@ pub fn kmer_chain(sample_kmers:&HashMap<i64, Vec<i32>>, ref_kmers:&HashMap<i64, 
                         unique_idx += 1;
                     }
                     if (anchors[j].1 < anchors[i].1) && (anchors[j].0 < anchors[i].0){
-                        //let mut chain = g[j as usize].0 + 1.0;
                         let gap = ((anchors[j].1 - anchors[i].1) - (anchors[j].0 - anchors[i].0)).abs();
                         let chain = g[j as usize].0 + 1.0;
                         let mut score = g[j as usize].2;
-                        //let new_bases = cmp::min(k, cmp::min(anchors[i].1 - anchors[j].1, anchors[i].0 - anchors[j].0)) as f32;
-                        //score += new_bases;
 
-                        /*
-                         
-                        if gap >= m{
-                            //score -= cmp::min(0.01 * (k * gap) as f32, (gap as f32).ln() / (2.0_f32).ln());
-                            //score -= (gap as f32).ln() / (2.0_f32).ln();
-                            score -= gap as f32;
-                        }
-                        else{
-                            //score -= (0.01 * (k * gap) as f32 + 0.5 * (gap as f32).ln() / (2.0_f32).ln());
-                            score -= (gap * gap) as f32;
-                        }
-                        */
-                        //if score >= max_score{
                         if chain > optimal_chain{
                             max_score = score;
                             optimal_gap = std::cmp::max(gap, g[j as usize].1 as i32);
                             //optimal_chain += 1.0;
                             optimal_chain = chain;
-                        }
-
-                        //println!("{}", gap);
-                        //let gap = cmp::max((anchors[j].1 - anchors[i].1).abs(), (anchors[j].0 - anchors[i].0).abs());
-                        //println!("{}, {}, {}", (anchors[j].1 - anchors[i].1).abs(), (anchors[j].0 - anchors[i].0).abs(), gap);
-                        
-                        /*
-                        if gap > m {
-                            //println!("gap is {}", gap);
-
-                            val -= ((gap) * gap) as f32;
-                            
                         }                        
-                        if val > max_val{
-                            
-                            max_val = val;
-                            optimal_gap = std::cmp::max(gap, g[j as usize].1 as i32);
-                        }
-                         */
-                        
                     }
                 }
                 else{
