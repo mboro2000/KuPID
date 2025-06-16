@@ -10,7 +10,7 @@ pub struct Sketch{
 #[derive(Clone)]
 pub struct Match{
     pub sample_id:String,
-    pub similarity:f32,
+    pub similarity:i32,
     pub gap:i32,
     pub chunk:usize
 }
@@ -23,7 +23,7 @@ pub fn build_Sketch(id:String, size:i32, kmers:HashMap<i64, Vec<i32>>) -> Sketch
     }
 }
 
-pub fn build_Match(sample_id:String, similarity:f32, gap:i32, chunk:usize) -> Match{
+pub fn build_Match(sample_id:String, similarity:i32, gap:i32, chunk:usize) -> Match{
     Match {
         sample_id: sample_id,
         similarity: similarity, 
