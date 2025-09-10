@@ -2,53 +2,34 @@ use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct Sketch{
-    pub id:String,
     pub size:i32,
-    pub kmers:HashMap<i64, Vec<i32>>
+    pub kmers:HashMap<i64, Vec<i32>>,
+    pub seq_len:usize
 }
 
 #[derive(Clone)]
 pub struct Match{
     pub sample_id:String,
-    pub similarity:i32,
-    pub gap:i32,
-    pub chunk:usize
+    pub similarity:f32,
+    pub chunk:usize,
+    pub num_matches:f32,
+    pub query_len:usize
 }
 
-pub fn build_Sketch(id:String, size:i32, kmers:HashMap<i64, Vec<i32>>) -> Sketch{
+pub fn build_sketch(size:i32, kmers:HashMap<i64, Vec<i32>>, seq_len:usize) -> Sketch{
     Sketch{
-        id:id,
         size:size,
-        kmers:kmers
+        kmers:kmers,
+        seq_len:seq_len
     }
 }
 
-pub fn build_Match(sample_id:String, similarity:i32, gap:i32, chunk:usize) -> Match{
+pub fn build_match(sample_id:String, similarity:f32, chunk:usize, num_matches:f32, query_len:usize) -> Match{
     Match {
         sample_id: sample_id,
-        similarity: similarity, 
-        gap: gap,
-        chunk:chunk}
+        similarity: similarity,
+        chunk:chunk,
+    num_matches:num_matches,
+query_len:query_len}
 }
 
-pub struct Bin{
-    pub threshold: f32,
-    pub matches: Vec<Match>,
-    pub contain_novel: bool,
-    pub min_val: f32,
-    pub num_novel: i32,
-    pub num_total: i32,
-    pub scores: Vec<i32>,
-}
-
-pub fn build_Bin(threshold:f32, matches:Vec<Match>, contain_novel:bool, min_val:f32, num_novel:i32, num_total:i32, scores:Vec<i32>) -> Bin{
-    Bin { 
-        threshold: threshold,
-        matches: matches,
-        contain_novel: contain_novel,
-        min_val: min_val,
-        num_novel: num_novel,
-        num_total: num_total,
-        scores:scores
-    }
-}

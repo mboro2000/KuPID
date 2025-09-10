@@ -1,3 +1,5 @@
+use clap::builder::StringValueParser;
+
 use crate::sketch::frac_min_hash;
 use crate::types::*;
 use std::collections::HashMap;
@@ -9,17 +11,15 @@ use std::path::Path;
 use std::fs;
 use std::cmp;
 
-pub fn create_kmer_map(ref_sketch:&HashMap<String, Sketch>, b:usize ) -> HashMap<i64, HashSet<String>>{
+pub fn create_kmer_map(ref_sketch:&HashMap<String, Sketch>, b:usize ) -> (HashMap<i64, HashSet<String>>){
 
     let mut kmer_map:HashMap<i64, HashSet<String>> = HashMap::new();
     let mut to_remove:HashSet<i64> = HashSet::new();
 
     for (id, sketch) in ref_sketch.iter(){
         for kmer in sketch.kmers.keys(){
-            if kmer_map.entry(*kmer).or_insert(HashSet::new()).len() < b{
-                kmer_map.entry(*kmer).or_insert(HashSet::new()).insert(id.clone());
-            }
-            else{
+            kmer_map.entry(*kmer).or_insert(HashSet::new()).insert(id.clone());
+            if kmer_map.entry(*kmer).or_insert(HashSet::new()).len() >= b{
                 to_remove.insert(*kmer);
             }
         }
@@ -29,30 +29,53 @@ pub fn create_kmer_map(ref_sketch:&HashMap<String, Sketch>, b:usize ) -> HashMap
         kmer_map.remove_entry(kmer);
     }
 
-    kmer_map
+    (kmer_map)
 }
 
-pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<String, Sketch>>>, sample_chunks_shared:Arc<RwLock<Vec<HashMap<String, String>>>>, b:usize, t: i32, n:i32, k:i32, a:i64, s:f64, m:i32, total_reads:i32, e:f32, B:f32, d:f32, c:f64)
- -> (Arc<RwLock<HashMap<String, usize>>>, HashMap<String, usize>, i32, i32, i32, i32, i32, i32, i32, i32, HashMap<String, (String, usize)>) {
+pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<String, Sketch>>>, sample_chunks_shared:Arc<RwLock<Vec<HashMap<String, String>>>>, b:usize, t: i32, n:i32, k:i32, a:i64, s:f64, m:i32, total_reads:i32, e:f32, B:f32, c:f64)
+ -> (Arc<RwLock<HashMap<String, usize>>>, HashMap<String, usize>, i32, i32, i32, i32) {
 
     let ref_map:HashMap<String, Vec<Match>> = HashMap::new(); 
     let AS:HashMap<String, usize> = HashMap::new();
 
-    let mut large_diff:HashMap<String, (String, usize)> = HashMap::new();
-
     let ref_sketches = ref_sketches_shared.read().unwrap();
-    let kmer_map = create_kmer_map(&ref_sketches, b);
+    let (kmer_map) = create_kmer_map(&ref_sketches, b);
     drop(ref_sketches);
     let mut handles = vec![];   
     let as_novel = 0;
     let as_annot = 0;
 
+    let mut end_gap_novel = 0;
+    let mut end_gap_annot = 0;
+    let mut ref_gap_novel = 0;
+    let mut ref_gap_annot = 0;
+
+    let end_gap_novel_shared = Arc::new(RwLock::new(end_gap_novel));
+    let end_gap_annot_shared = Arc::new(RwLock::new(end_gap_annot));
+    let ref_gap_novel_shared = Arc::new(RwLock::new(ref_gap_novel)) ;  
+    let ref_gap_annot_shared = Arc::new(RwLock::new(ref_gap_annot)) ;  
+    
     let kmer_map_shared = Arc::new(RwLock::new(kmer_map));
     let ref_map_shared = Arc::new(RwLock::new(ref_map));
     let as_shared = Arc::new(RwLock::new(AS));
-
+    
     let as_novel_shared = Arc::new(RwLock::new(as_novel));
     let as_annot_shared = Arc::new(RwLock::new(as_annot));
+
+    let end_gap_file = output.clone() + ".end_gap_reads.csv";
+    let end_gap_path = Path::new(&end_gap_file);
+    let mut end_gap_outline = "id,opt ref gap,query gap from 5p,query gap from 3p,internal gap,optimal score\n".to_string();
+    let end_gap_outline_shared = Arc::new(RwLock::new(end_gap_outline));
+
+    let ceiling_file = output.clone() + ".score_ceiling.csv";
+    let ceiling_path = Path::new(&ceiling_file);
+    let mut ceiling_outline = "read,score\n".to_string();
+    let ceiling_outline_shared = Arc::new(RwLock::new(ceiling_outline));
+
+    let mut no_gene_novel = 0;
+    let mut no_gene_annot = 0;
+    let no_gene_novel_shared = Arc::new(RwLock::new(no_gene_novel));
+    let no_gene_annot_shared = Arc::new(RwLock::new(no_gene_annot));
 
     for i in 0..t as usize{
         let sample_chunks_shared = Arc::clone(&sample_chunks_shared); 
@@ -64,6 +87,16 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
         let as_novel_shared = Arc::clone(&as_novel_shared);
         let as_annot_shared = Arc::clone(&as_annot_shared);
 
+        let end_gap_novel_shared = Arc::clone(&end_gap_novel_shared);
+        let end_gap_annot_shared = Arc::clone(&end_gap_annot_shared);
+        let ref_gap_novel_shared = Arc::clone(&ref_gap_novel_shared);
+        let ref_gap_annot_shared = Arc::clone(&ref_gap_annot_shared);
+        let no_gene_novel_shared = Arc::clone(&no_gene_novel_shared);
+        let no_gene_annot_shared = Arc::clone(&no_gene_annot_shared);
+        let end_gap_outline_shared = Arc::clone(&end_gap_outline_shared);
+        let ceiling_outline_shared = Arc::clone(&ceiling_outline_shared);
+        
+
         let handle = thread::spawn(move || {
             let guard = sample_chunks_shared.read().unwrap();
             let sample_chunk = (guard).get(i).expect("msg");
@@ -74,17 +107,33 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
 
             for (id, seq) in sample_chunk.iter(){
 
-                let (size, sketch) = frac_min_hash(&seq, k, a,s);
+                let mut tail_len = 0;
+                let mut chars = seq.chars().rev();
+                let mut c = chars.next().expect("msg");
+                while c=='A' || c=='a'{
+                    tail_len += 1;
+                    c = chars.next().expect("msg");
+                }
+                let adjusted_len = seq.len() as i32 - tail_len;
 
-                let mut opt_similarity = -1.0 * f32::INFINITY;            
+                let (size, sketch) = frac_min_hash(&seq, k, a,s);
+                //sketch: hash score of kmer: (list of positions where kmer is located)
+                //size: total # of kmers in the sketch (w/ multiplicity)
+
+                let mut no_match = 0;
+
+                let mut opt_similarity = -1.0 * f32::INFINITY;   
+                let mut opt_num_matches = 0;         
                 let mut opt_ref_match = "".to_string();
                 let mut opt_ref_len = 0;
                 let mut opt_gap = 0;
-                let mut opt_gap_5 = 0;
-                let mut opt_gap_3 = 0;
+                let mut opt_query_gap = 0;
+                let mut opt_chain = 0;
+                let mut opt_ref_gap = 0;
                 
                 let mut ref_matches:HashMap<String, i32> = HashMap::new();
                 let mut max_matches = 0;
+
 
                 for kmer in sketch.keys(){
                     if kmer_map.contains_key(kmer){
@@ -99,46 +148,94 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                 }
 
                 for (ref_id, num_matches) in ref_matches.iter(){
-                    if *num_matches == max_matches{
+                    if (*num_matches == max_matches) && (max_matches > 0){
                         let r_sketch = ref_sketches.get(ref_id).expect("msg");
-                        let (chain_score, gap, first_pos_q, first_pos_r, last_pos_q, last_pos_r) = kmer_chain(&(sketch),  &r_sketch.kmers, m);
+                        let (chain_score, gap, (first_pos_q, first_pos_r), (last_pos_q, last_pos_r)) = kmer_chain(&(sketch),  &r_sketch.kmers, m);
 
-                        let gap_5 = std::cmp(first_pos_q, first_pos_r);
-                        let gap_3 = std::cmp(seq.len() as i32 - last_pos_q, opt_ref_len as i32 - last_pos_r);
+                        let gap_5p = std::cmp::max(0,first_pos_q - first_pos_r);
+                        let gap_3p = std::cmp::max(0,(adjusted_len - last_pos_q) - (r_sketch.seq_len as i32 - last_pos_r));
 
-                        let sim_score = chain_score / ((size + r_sketch.size) as f32 - chain_score);
+                        let mut ref_gap = 0;
+                        if std::cmp::max(first_pos_r - first_pos_q, ((r_sketch.seq_len as i32 - last_pos_r) - (adjusted_len - last_pos_q))) > 0{
+                            ref_gap = std::cmp::max(first_pos_q, (adjusted_len - last_pos_q - k + 1));
+                        }
+                        
+                        let sim_score = chain_score as f32 / ((size + r_sketch.size) as f32 - chain_score as f32);
                         if sim_score > opt_similarity{
                             opt_similarity = sim_score;
                             opt_ref_match = ref_id.clone();
                             opt_ref_len = r_sketch.seq_len;
                             opt_gap = gap;
+                            opt_chain = chain_score;
+                            opt_query_gap = std::cmp::max(gap_3p, gap_5p);
+                            opt_ref_gap = ref_gap;
+                            opt_num_matches = chain_score as i32;
+
                         }
                     }              
                 }
+
                 
-                if opt_gap > n{
+                let mut end_gap_outline = end_gap_outline_shared.write().unwrap();
+                end_gap_outline.push_str(&(id.to_string() + "," + &(opt_ref_gap).to_string() + "," + &(opt_query_gap).to_string() + "," + &(opt_gap).to_string() + "," + &(opt_similarity).to_string() + "\n"));
+                drop(end_gap_outline);
+                
+
+                let mut ceiling_outline = ceiling_outline_shared.write().unwrap();
+                ceiling_outline.push_str(&(id.to_string() + "," + &(opt_similarity.to_string()) + "\n"));
+
+                if opt_gap > n{                    
+                        let mut AS = as_shared.write().unwrap();
+                        AS.entry(id.clone()).or_insert(i);
+                        if id.contains("novel"){
+                            *as_novel_shared.write().unwrap() += 1;
+                        }
+                        else{
+                            *as_annot_shared.write().unwrap() += 1;
+                        }
+                }
+                
+                else if opt_num_matches == 0{
+                    if adjusted_len >= 250{
+                        let mut AS = as_shared.write().unwrap();
+                        AS.entry(id.clone()).or_insert(i);
+                        if id.contains("novel"){
+                            *no_gene_novel_shared.write().unwrap() += 1;
+                        }
+                        else{
+                            *no_gene_annot_shared.write().unwrap() += 1;
+                        }
+                    }
+                }
+                
+                else if  opt_query_gap > n{
                     let mut AS = as_shared.write().unwrap();
                     AS.entry(id.clone()).or_insert(i);
                     if id.contains("novel"){
-                        *as_novel_shared.write().unwrap() += 1;
+                        *end_gap_novel_shared.write().unwrap() += 1;   
                     }
                     else{
-                        *as_annot_shared.write().unwrap() += 1;
-                    }
+                        *end_gap_annot_shared.write().unwrap() += 1;
+                    }             
                 }
-                else{
-                    let mut ref_map = ref_map_shared.write().unwrap(); 
-                    let cov_q = seq.len() as f32 / opt_ref_len as f32;
-                    let cov_r = opt_ref_len as f32 / seq.len() as f32;
-                    let mut cov = 0.0;
-                    if cov_q < cov_r{
-                        cov = cov_q;
+
+                else if opt_ref_gap > 100{
+                    let mut AS = as_shared.write().unwrap();
+                    AS.entry(id.clone()).or_insert(i);
+                    if id.contains("novel"){
+                        *ref_gap_novel_shared.write().unwrap() += 1;
                     }
                     else{
-                        cov = cov_r;
-                    }
-                    ref_map.entry(opt_ref_match.clone()).or_insert(Vec::new()).push(build_match(id.clone(), opt_similarity, i, cov));
-                    drop(ref_map)
+                        *ref_gap_annot_shared.write().unwrap() += 1;
+                    }  
+                }
+                                
+                else{
+                        let mut ref_map = ref_map_shared.write().unwrap(); 
+                        ref_map.entry(opt_ref_match.clone()).or_insert(Vec::new()).push(build_match(id.clone(), opt_similarity, i, opt_chain as f32, adjusted_len as usize));
+
+                        drop(ref_map);
+
                 }      
             }
 
@@ -155,48 +252,30 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     println!("Novel w/ gaps: {}", as_novel_shared.read().unwrap());
     println!("Annot w/ gaps: {}", as_annot_shared.read().unwrap());
 
-    let num_AS = as_shared.read().unwrap().len();
+    println!("Novel reads with end gaps: {}", end_gap_novel_shared.read().unwrap());
+    println!("Annotated reads with end gaps: {}", end_gap_annot_shared.read().unwrap());
+
+    println!("Novel reads with end gaps on the reference: {}", ref_gap_novel_shared.read().unwrap());
+    println!("Annotated reads with end gaps on the reference: {}", ref_gap_annot_shared.read().unwrap());
+    println!("Novel reads with no kmer matches: {}", no_gene_novel_shared.read().unwrap());
+    println!("Annotated reads with no kmer matches: {}", no_gene_annot_shared.read().unwrap());
+
+    let num_AS = *as_novel_shared.read().unwrap() + *as_annot_shared.read().unwrap();
+    println!("Num AS {}", num_AS);
     let mut avg_sq:Vec<i32> = Vec::new();
     let mut group_avg_sq:HashMap<String, i32> = HashMap::new();
 
-    /*
-    let avg_sq_file = output.clone() + ".group_averages.csv";
-    let avg_sq_path = Path::new(&avg_sq_file);
-    let mut avg_sq_outline = "average_sqs,num_annot,num_novel\n".to_string();
-
-
-     */   
-
-    let cov_file = output.clone() + ".coverage_all.csv";
-    let cov_path = Path::new(&cov_file);
-    let mut cov_outline = "score,coverage,type\n".to_string();
-
     let sim_ceiling = B * (1.0 - k as f32 *e);
-    let max_diff = d * (1.0 - k as f32*e);
-
-    println!("Max diff is {}", max_diff);
 
     for iso in ref_map.keys(){
         let mut scores:Vec<f32> = Vec::new();
         let num_reads = ref_map.get(iso).expect("msg").len();
 
-        let mut num_incl = 0;
-
         for read in ref_map.get(iso).expect("msg").iter(){
-            let diff = (read.coverage * (1.0 - k as f32 *e)) - read.similarity;
-            scores.push(read.similarity);  
-
-            
-            if read.sample_id.contains("_novel"){
-                cov_outline.push_str(&(read.similarity.to_string() + "," + &(read.coverage.to_string()) + ",novel\n"));
-            }
-            else{
-                cov_outline.push_str(&(read.similarity.to_string() + "," + &(read.coverage.to_string()) + ",annot\n"));
-            }
-             
+            scores.push(read.similarity);             
         }   
-        let score_avg = (1000.0 * scores.iter().sum::<f32>() / scores.len() as f32) as i32;
 
+        let score_avg = (1000.0 * scores.iter().sum::<f32>() / scores.len() as f32) as i32;
         if score_avg >= 0{
             group_avg_sq.entry(iso.clone()).or_insert(score_avg*score_avg);
             for _i in 0..num_reads{
@@ -206,114 +285,71 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     }
 
     let mut ATSS:HashMap<String, usize> = HashMap::new();
-    let mut ATSS_novel = 0;
-    let mut ATSS_annot = 0;
+    let mut ATSS_novel = *end_gap_novel_shared.read().unwrap() + *ref_gap_novel_shared.read().unwrap() + *no_gene_novel_shared.read().unwrap();
+    let mut ATSS_annot = *end_gap_annot_shared.read().unwrap() + *ref_gap_annot_shared.read().unwrap() + *no_gene_annot_shared.read().unwrap();
 
     avg_sq.sort();
-    let cand_to_select = (c * num_AS as f64) as usize;
+    let mut cand_to_select = (c * num_AS as f64) as usize;
+
+    println!("Num ATSS from Novel Exons: {}", ATSS_annot+ATSS_novel);
+
+    if (ATSS_annot+ATSS_novel) > cand_to_select{
+        cand_to_select = 0;
+    }
+    else{
+        cand_to_select -= (ATSS_annot+ATSS_novel) as usize;
+    }
 
     println!("Cand to select: {}", cand_to_select);
 
-    let mut exclude_d_novel = 0;
-    let mut exclude_B_novel = 0;
-    let mut exclude_d_annot = 0;
-    let mut exclude_B_annot = 0;
-
     if cand_to_select > 0{
-        let mut avg_sq_threshold = avg_sq.pop().expect("msg");
+        if avg_sq.len() > 0{
+            let mut avg_sq_threshold = avg_sq.pop().expect("msg");
 
-        if cand_to_select < avg_sq.len(){
-            avg_sq_threshold = avg_sq[cand_to_select];
-        }
-
-        for (iso, avg_sq) in group_avg_sq.into_iter(){
-            let mut group_annot = 0;
-            let mut group_novel = 0;
-
-            let matches = ref_map.get(&iso).expect("msg");
-
-            /*
-            for read in matches.iter(){
-                if read.sample_id.contains("novel"){
-                group_novel += 1;
-                }
-                else{
-                    group_annot += 1;
-                }
+            if cand_to_select < avg_sq.len(){
+                avg_sq_threshold = avg_sq[cand_to_select];
             }
 
-            avg_sq_outline.push_str(&(avg_sq.to_string() + "," +  &group_annot.to_string() + "," + &group_novel.to_string() + "\n"));
-             */
+            println!("Avg score threshold: {}", avg_sq_threshold);
+
+            for (iso, avg_sq) in group_avg_sq.into_iter(){
+
+                let matches = ref_map.get(&iso).expect("msg");
             
-            if avg_sq <= avg_sq_threshold{
-                for read in matches.iter(){
-                    if read.similarity < sim_ceiling{
+                if avg_sq <= avg_sq_threshold{
+                    for read in matches.iter(){
+                        if read.similarity < sim_ceiling{        
 
-                        /*
-                        if read.sample_id.contains("_novel"){
-                            cov_outline_2.push_str(&(read.similarity.to_string() + "," + &(read.coverage.to_string()) + ",novel\n"));
-                        }
-                        else{
-                            cov_outline_2.push_str(&(read.similarity.to_string() + "," + &(read.coverage.to_string()) + ",annot\n"));
-                        }
-                         */
-                        
-
-                        let diff = (read.coverage * (1.0 - k as f32 *e)) - read.similarity;
-
-                        if diff >= 0.8{
-                            println!("Ref is {}", iso);
-
-                            large_diff.entry(read.sample_id.clone()).or_insert((iso.clone(), read.chunk));
-                        }
-
-                        if diff <= max_diff{
-                            ATSS.entry(read.sample_id.clone()).or_insert(read.chunk);  
+                            ATSS.entry(read.sample_id.clone()).or_insert(read.chunk);           
 
                             if read.sample_id.contains("novel"){
                                 ATSS_novel += 1;
                             }
                             else{
                                 ATSS_annot += 1;
-                            }
+                            }                                                                                  
                         }
-                        else{
-                            if read.sample_id.contains("novel"){
-                                exclude_d_novel += 1;
-                            }
-                            else{
-                                exclude_d_annot += 1;
-                            }
-                        }                        
-                    }
-                    else {
-
-                        if read.sample_id.contains("novel"){
-                                exclude_B_novel += 1;
-                            }
-                            else{
-                                exclude_B_annot += 1;
-                            }
                     }
                 }
-            }
-        }        
+            }        
+        }
     }
     
-    //fs::write(avg_sq_path, avg_sq_outline);
-    //fs::write(stats_path, stats_outline);
+    println!("ATSS novel: {}", ATSS_novel);
+    println!("ATSS annot: {}", ATSS_annot);
 
-    fs::write(cov_path, cov_outline);
-    //fs::write(cov_path_2, cov_outline_2);
+    fs::write(end_gap_path, end_gap_outline_shared.read().unwrap().clone());
+    fs::write(ceiling_path, ceiling_outline_shared.read().unwrap().clone());
 
 let as_novel = as_novel_shared.read().unwrap().clone();
 let as_annot = as_annot_shared.read().unwrap().clone(); 
-(as_shared, ATSS, as_novel, as_annot, ATSS_novel, ATSS_annot, exclude_d_novel, exclude_d_annot, exclude_B_novel, exclude_B_annot, large_diff)
+(as_shared, ATSS, as_novel, as_annot, ATSS_novel as i32, ATSS_annot as i32)
  }
 
-pub fn kmer_chain(sample_kmers:&HashMap<i64, Vec<i32>>, ref_kmers:&HashMap<i64, Vec<i32>>, m:i32) -> (f32, i32, i32, i32, i32, i32){
+pub fn kmer_chain(sample_kmers:&HashMap<i64, Vec<i32>>, ref_kmers:&HashMap<i64, Vec<i32>>, m:i32) -> (i32, i32, (i32, i32), (i32, i32)){
     
-    let mut g:Vec<(f32, i32, i32, i32, i32, i32)> = Vec::new();  
+    let mut g_add:Vec<(i32, i32, i32, i32)> = Vec::new();  
+    let mut g_not:Vec<(i32, i32, i32, i32)> = Vec::new();  
     let mut anchors:Vec<(i32, i32)> = Vec::new();
 
     for (kmer, pos) in sample_kmers{
@@ -325,26 +361,31 @@ pub fn kmer_chain(sample_kmers:&HashMap<i64, Vec<i32>>, ref_kmers:&HashMap<i64, 
             }            
         }
     }       
+
     anchors.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
       
-    for i in 0.. anchors.len(){
-        let mut optimal_chain = 1.0;
-        let mut optimal_gap = 0;
-        let mut first_pos_q = anchors[i].0;
-        let mut last_pos_q = anchors[i].0;
-        let mut first_pos_r = anchors[i].1;
-        let mut last_pos_r = anchors[i].1;
+    for i in 0.. anchors.len() as i32{
+        let mut opt_chain_add = 1;
+        let mut opt_gap_add = 0;
+        let mut first_add = i;
+        let mut last_add = i;
 
+        let mut opt_chain_not = 0;
+        let mut opt_gap_not = 0;
+        let mut first_not:i32 = -1;
+        let mut last_not:i32 = -1;
 
         if i == 0{            
-            g.push((optimal_chain, optimal_gap, first_pos_q, first_pos_r, last_pos_q, last_pos_r));
+            g_add.push((opt_chain_add, opt_gap_add, first_add, last_add));
+            g_not.push((opt_chain_not, opt_gap_not, first_not, last_not));
         }
         else{
+            
             let mut unique_idx = 0;
             let mut l = 0;
 
             while unique_idx < m{
-                let j:i32 = i as i32 - l - 1;
+                let j = i - l - 1;
                 l += 1;
 
                 if j >= 0{
@@ -353,25 +394,75 @@ pub fn kmer_chain(sample_kmers:&HashMap<i64, Vec<i32>>, ref_kmers:&HashMap<i64, 
                     if anchors[j].0 != anchors[j+1].0 && anchors[j].1 != anchors[j+1].1{
                         unique_idx += 1;
                     }
-                    if (anchors[j].1 < anchors[i].1) && (anchors[j].0 < anchors[i].0){
-                        let gap = ((anchors[j].1 - anchors[i].1) - (anchors[j].0 - anchors[i].0)).abs();
-                        let chain = g[j as usize].0 + 1.0;
-                        
-                        if chain > optimal_chain{
-                            optimal_gap = std::cmp::max(gap, g[j as usize].1 as i32);
-                            optimal_chain = chain;
 
-                            first_pos_q = g[j as usize].2;
-                            first_pos_r = g[j as usize].3;
-                        }                       
+                    //if anchor i is not added to the optimal chain
+                    if g_not[j].0 >= opt_chain_not{
+                        opt_chain_not = g_not[j].0;
+                        opt_gap_not = g_not[j].1;
+                        first_not = g_not[j].2;
+                        last_not = g_not[j].3;                        
+                    }  
+                    if g_add[j].0 >= opt_chain_not{
+                        opt_chain_not = g_add[j].0;
+                        opt_gap_not = g_add[j].1;
+                        first_not = g_add[j].2;
+                        last_not = g_add[j].3;                        
+                    }                
+
+                    //if anchor i is added to the optimal chain
+                    let prev = g_add[j].3;
+                    if prev != -1{
+                        let prev = prev as usize;
+                        if (anchors[prev].1 < anchors[i as usize].1) && (anchors[prev].0 < anchors[i as usize].0){
+                            let gap = ((anchors[prev].1 - anchors[i as usize].1) - (anchors[prev].0 - anchors[i as usize].0)).abs();
+                            let w_anchor = g_add[j].0 + 1;                        
+                            
+                            if w_anchor >= opt_chain_add{
+                                opt_chain_add = w_anchor;
+                                opt_gap_add = std::cmp::max(gap, g_add[j].1 as i32);                     
+                                first_add = g_add[j].2;
+                                last_add = i;                         
+                            }                       
+                        }
+                    }
+                    
+                    let prev = g_not[j].3;
+                    if prev != -1{
+                        let prev = prev as usize;
+                        if (anchors[prev].1 < anchors[i as usize].1) && (anchors[prev].0 < anchors[i as usize].0){
+                            let gap = ((anchors[prev].1 - anchors[i as usize].1) - (anchors[prev].0 - anchors[i as usize].0)).abs();
+                            let w_anchor = g_not[j].0 + 1;                        
+                            
+                            if w_anchor >= opt_chain_add{
+                                opt_chain_add = w_anchor;
+                                opt_gap_add = std::cmp::max(gap, g_not[j].1 as i32);                     
+                                first_add = g_not[j].2;
+                                last_add = i;                         
+                            }                       
+                        }
                     }
                 }
                 else{
                     unique_idx = m;
                 }
             }
-            g.push((optimal_chain, optimal_gap, first_pos_q, first_pos_r, last_pos_q, last_pos_r));
+            
+            g_add.push((opt_chain_add, opt_gap_add, first_add, last_add));
+            g_not.push((opt_chain_not, opt_gap_not, first_not, last_not));
         }
     }    
-    g.pop().expect("msg")
+    let ret_add = g_add.pop().expect("msg");
+    let ret_not = g_not.pop().expect("msg");
+
+    if ret_add.0 > ret_not.0{
+        let first_anchor = anchors[ret_add.2 as usize];
+        let last_anchor = anchors[ret_add.3 as usize];
+        (ret_add.0, ret_add.1, first_anchor, last_anchor)
+    }
+    else{
+        let first_anchor = anchors[ret_not.2 as usize];
+        let last_anchor = anchors[ret_not.3 as usize];
+        (ret_not.0, ret_not.1, first_anchor, last_anchor)
+    }
+
 }

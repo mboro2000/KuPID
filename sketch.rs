@@ -1,3 +1,4 @@
+
 use std::collections::HashMap;
 use bio::io::fasta;
 use std::str;
@@ -29,7 +30,7 @@ pub fn read_input(t:i32, file:&String) -> (Vec<HashMap<String, String>>, i32){
 }
 
 pub fn get_sketches(read_data:Vec<HashMap<String, String>>, k:i32, a:i64, s:f64, t:i32) -> Arc<RwLock<HashMap<String, Sketch>>> {
-  
+   
     let seq_sketches:HashMap<String, Sketch> = HashMap::new();
     let mut handles = vec![];    
     let seq_sketches_shared = Arc::new(RwLock::new(seq_sketches));
@@ -90,7 +91,12 @@ pub fn frac_min_hash(seq:&str, k:i32, a:i64, s:f64) -> (i32, HashMap<i64, Vec<i3
     let mut kmers:HashMap<i64, Vec<i32>> = HashMap::new();
     let mut ind = 0;
 
+
+    //Preprocess string to remove polyA tail
+
     let s = &seq[0 .. cmp::min(k as usize, seq.len())];
+
+
 
     for item in s.chars() {
         label  = label << 2;
@@ -107,7 +113,7 @@ pub fn frac_min_hash(seq:&str, k:i32, a:i64, s:f64) -> (i32, HashMap<i64, Vec<i3
 
         let mut exit_char = seq[ .. (seq.len() as i32 - k) as usize].chars();
         let mut enter_char = seq[k as usize..].chars();
-               
+                              
         for i in 0 .. seq.len() - k as usize{
             let p0 = map_atcg(exit_char.next().expect("msg"), 0);
             label -= p0 << ((k-1) << 1);

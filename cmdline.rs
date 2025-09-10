@@ -1,4 +1,4 @@
-use clap::{Args, Parser, Subcommand};
+use clap::{Parser};
 
 #[derive(Parser)]
 #[clap(author, version, about = "Preprocessing script to select reads from an RNAseq sample that are likely transcribed from novel isoforms", arg_required_else_help = true, disable_help_subcommand = true)]
@@ -25,10 +25,12 @@ pub struct Cli {
     pub s: f64,
     #[clap(short='b',long="Max density of kmer map bins", default_value_t = 12, help = "Set the maximum num. of isoforms that can map to a given kmer")]
     pub b: usize,
-    #[clap(short='m',long="Gap between matches", default_value_t = 7, help = "Set the maximum gap size allowed in annotated readss")]
-    pub m: i32,  
-    #[clap(short='q',long="Subsample size", default_value_t = 0.5, help = "Set the fraction of binned RNAseq reads to subsample")]
-    pub q: f32,
-    #[clap(short='c',long="Candidate set size", default_value_t = 0.1, help = "Set the fraction of RNAseq reads to choose as novel candidates")]
+    #[clap(short='n',long="Gap between matches", default_value_t = 30, help = "Set the maximum gap allowed in an optimal chain without AS")]
+    pub n: i32,  
+    #[clap(short='m',long="Band width", default_value_t = 30, help = "Set the band width of the chaining procedure's dynamic programming table")]
+    pub m: i32, 
+    #[clap(short='B',long="Maximum novel similarity", default_value_t = 0.98, help = "Set the maximum similarity score allowed for a novel read")]
+    pub B: f32,
+    #[clap(short='c',long="Candidate set size", default_value_t = 1.5, help = "Set the scale factor for the number of ATSS candidates")]
     pub c: f64
 }

@@ -1,21 +1,23 @@
 use std::collections::HashMap;
+use std::ptr::read;
 use std::time::Instant;
 use std::env;
 use clap::Parser;
-use std::sync::Mutex;
 use crate::types::*;
 use std::sync::{Arc, RwLock};
 use std::path::Path;
 use std::fs;
-use std::f32;
 
 use isoforms::types;
 use isoforms::sketch;
 use isoforms::map;
-use isoforms::filter;
+//use isoforms::filter;
 use isoforms::cmdline;
-   
-fn main() {   
+
+use rand::{Rng, SeedableRng};
+use rand::rngs::StdRng;
+
+fn main() {      
 
     let cli = cmdline::Cli::parse();
 
@@ -30,53 +32,57 @@ fn main() {
     let b = cli.b;
     let m = cli.m;
     let c = cli.c;
-    let q = cli.q;
-
-    let nb = (10.0 / (1.0 - k as f64*e)).floor() as i32;
-    let p = k as f64*e * (2.0 + (k as f64 * e - 1.0) * (1.0 - s).powi(k - 1) - k as f64*e);
-
-    let C_prob = 0.99;
-    let mut C = 0.0;
-    let mut check = 0;
-
-    while C < C_prob{
-        C += p.powi(check) * (1.0-p);
-        check += 1;
-    }
-
-    //println!("p is {}", p);
-    //println!("C is {}, check is {}", C, check);
+    let B = cli.B;
+    let n = cli.n;
 
     env::set_var("RUST_BACKTRACE", "1");
 
-    let chks = [check].to_vec();
-    //let chks = [3, 5, 7, 10].to_vec();
-
-    for ck in chks.iter(){
-
-        let now = Instant::now();
+    let now = Instant::now();
     
-        let sample_data = sketch::read_input(t, &sample_file);
-        let mut sample_data_shared = Arc::new(RwLock::new(sample_data));    
-        let ref_sketch:Arc<RwLock<HashMap<String, Sketch>>>   = sketch::get_sketches(sketch::read_input(t, &ref_file), k, a, s, t);
-        let (ref_map, crit_1_shared) = map::find_ref_matches(ref_sketch, Arc::clone(&sample_data_shared), b, t, m, k, a, s, *ck);  
-        let num_exon_gaps = crit_1_shared.read().unwrap().len();
-        let criteria_2 = filter::filter(Arc::clone(&sample_data_shared), Arc::clone(&ref_map), nb, q, c, num_exon_gaps);
-        //let out = "novel_candidates_ck".to_string() + &ck.to_string() + ".fa";
-        let candidates_path = Path::new(&output);
-        let mut candidates_outline = "".to_string();
+    let (sample_data, total_reads) = sketch::read_input(t, &sample_file);
+    let sample_data_shared = Arc::new(RwLock::new(sample_data));
 
-        let sample = sample_data_shared.read().unwrap();
+    let ref_data = sketch::read_input(t, &ref_file).0;
     
-        for (id, chunk) in crit_1_shared.read().unwrap().iter(){
-            candidates_outline.push_str(&(">".to_string() + &id.clone() + "\n" + &sample[*chunk].get(id).expect("msg") + "\n"));
-        }
-        for (id, chunk) in criteria_2.iter(){
-            candidates_outline.push_str(&(">".to_string() + &id.clone() + "\n" + &sample[*chunk].get(id).expect("msg") + "\n"));
-        }
+    let ref_sketch:Arc<RwLock<HashMap<String, Sketch>>>   = sketch::get_sketches(sketch::read_input(t, &ref_file).0, k, a, s, t);  
+    
+    let (AS_shared, ATSS, AS_novel, AS_annot, ATSS_novel, ATSS_annot) = map::find_ref_matches(output.clone(), ref_sketch, Arc::clone(&sample_data_shared), b, t, n, k, a, s, m, total_reads, e as f32, B, c);       
+    let sample = sample_data_shared.read().unwrap();
 
-        fs::write(candidates_path, candidates_outline);
+    let AS_file = output.clone() + ".AS.fa";
+    let ATSS_file = output.clone() + ".ATSS.fa";
 
-        let elapsed = now.elapsed();    
-        println!("Elapsed: {:.2?}", elapsed); 
+    let candidates_path_AS = Path::new(&AS_file);
+    let mut candidates_outline_AS = "".to_string();
+    let candidates_path_ATSS = Path::new(&ATSS_file);
+    let mut candidates_outline_ATSS = "".to_string();
+    
+         
+    for (id, chunk) in AS_shared.read().unwrap().iter(){
+        candidates_outline_AS.push_str(&(">".to_string() + &id.clone() + "\n" + &sample[*chunk].get(id).expect("msg") + "\n"));
+        candidates_outline_ATSS.push_str(&(">".to_string() + &id.clone() + "\n" + &sample[*chunk].get(id).expect("msg") + "\n"));
+    }
+    for (id, chunk) in ATSS.iter(){
+        candidates_outline_ATSS.push_str(&(">".to_string() + &id.clone() + "\n" + &sample[*chunk].get(id).expect("msg") + "\n"));
+    }
+
+        
+    fs::write(candidates_path_AS, candidates_outline_AS);
+    fs::write(candidates_path_ATSS, candidates_outline_ATSS);              
+
+    let elapsed = now.elapsed();    
+
+    let stats_file = output.clone() + ".stats.csv";
+    let stats_path = Path::new(&stats_file);
+    let mut stats_outline = "AS novel,AS annot,ATSS novel,ATSS annot,runtime\n".to_string();
+    stats_outline.push_str(&(AS_novel.to_string() + "," + &AS_annot.to_string() + "," + &ATSS_novel.to_string() + "," + &ATSS_annot.to_string() + ","  + &elapsed.as_secs_f32().to_string()));
+
+
+    println!("{}", AS_novel);
+    println!("{}", AS_annot);
+    println!("{}", ATSS_novel);
+    println!("{}", ATSS_annot);
+
+    fs::write(stats_path, stats_outline);
+    
     }
