@@ -1,4 +1,6 @@
 use clap::builder::StringValueParser;
+use rand::seq::IndexedRandom;
+use rand::seq::IteratorRandom;
 
 use crate::sketch::frac_min_hash;
 use crate::types::*;
@@ -10,6 +12,7 @@ use std::time::Instant;
 use std::path::Path;
 use std::fs;
 use std::cmp;
+use rand;
 
 pub fn create_kmer_map(ref_sketch:&HashMap<String, Sketch>, b:usize ) -> (HashMap<i64, HashSet<String>>){
 
@@ -32,8 +35,8 @@ pub fn create_kmer_map(ref_sketch:&HashMap<String, Sketch>, b:usize ) -> (HashMa
     (kmer_map)
 }
 
-pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<String, Sketch>>>, sample_chunks_shared:Arc<RwLock<Vec<HashMap<String, String>>>>, b:usize, t: i32, n:i32, k:i32, a:i64, s:f64, m:i32, total_reads:i32, e:f32, B:f32, c:f64)
- -> (Arc<RwLock<HashMap<String, usize>>>, HashMap<String, usize>, i32, i32, i32, i32) {
+pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<String, Sketch>>>, sample_chunks_shared:Arc<RwLock<Vec<HashMap<String, String>>>>, b:usize, t: i32, n:i32, k:i32, a:i64, s:f64, m:i32, total_reads:i32, e:f32, B:f32, c:f64, mode:String, l:usize)
+ -> (Arc<RwLock<HashMap<String, usize>>>, HashMap<String, usize>) {
 
     let ref_map:HashMap<String, Vec<Match>> = HashMap::new(); 
     let AS:HashMap<String, usize> = HashMap::new();
@@ -45,15 +48,12 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     let as_novel = 0;
     let as_annot = 0;
 
-    let mut end_gap_novel = 0;
-    let mut end_gap_annot = 0;
-    let mut ref_gap_novel = 0;
-    let mut ref_gap_annot = 0;
-
-    let end_gap_novel_shared = Arc::new(RwLock::new(end_gap_novel));
-    let end_gap_annot_shared = Arc::new(RwLock::new(end_gap_annot));
-    let ref_gap_novel_shared = Arc::new(RwLock::new(ref_gap_novel)) ;  
-    let ref_gap_annot_shared = Arc::new(RwLock::new(ref_gap_annot)) ;  
+    let exon_novel = 0;
+    let no_match_novel = 0;
+    let exon_annot = 0;
+    let r_gap_annot = 0;
+    let q_gap_annot = 0;
+    let no_match_annot = 0;
     
     let kmer_map_shared = Arc::new(RwLock::new(kmer_map));
     let ref_map_shared = Arc::new(RwLock::new(ref_map));
@@ -61,6 +61,12 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     
     let as_novel_shared = Arc::new(RwLock::new(as_novel));
     let as_annot_shared = Arc::new(RwLock::new(as_annot));
+    let exon_novel_shared = Arc::new(RwLock::new(exon_novel));
+    let exon_annot_shared = Arc::new(RwLock::new(exon_annot));
+    let r_gap_annot_shared = Arc::new(RwLock::new(r_gap_annot));
+    let q_gap_annot_shared = Arc::new(RwLock::new(q_gap_annot));
+    let no_match_annot_shared = Arc::new(RwLock::new(no_match_annot));
+    let no_match_novel_shared = Arc::new(RwLock::new(no_match_novel));
 
     let end_gap_file = output.clone() + ".end_gap_reads.csv";
     let end_gap_path = Path::new(&end_gap_file);
@@ -72,11 +78,6 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     let mut ceiling_outline = "read,score\n".to_string();
     let ceiling_outline_shared = Arc::new(RwLock::new(ceiling_outline));
 
-    let mut no_gene_novel = 0;
-    let mut no_gene_annot = 0;
-    let no_gene_novel_shared = Arc::new(RwLock::new(no_gene_novel));
-    let no_gene_annot_shared = Arc::new(RwLock::new(no_gene_annot));
-
     for i in 0..t as usize{
         let sample_chunks_shared = Arc::clone(&sample_chunks_shared); 
         let kmer_map_shared = Arc::clone(&kmer_map_shared);
@@ -87,12 +88,12 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
         let as_novel_shared = Arc::clone(&as_novel_shared);
         let as_annot_shared = Arc::clone(&as_annot_shared);
 
-        let end_gap_novel_shared = Arc::clone(&end_gap_novel_shared);
-        let end_gap_annot_shared = Arc::clone(&end_gap_annot_shared);
-        let ref_gap_novel_shared = Arc::clone(&ref_gap_novel_shared);
-        let ref_gap_annot_shared = Arc::clone(&ref_gap_annot_shared);
-        let no_gene_novel_shared = Arc::clone(&no_gene_novel_shared);
-        let no_gene_annot_shared = Arc::clone(&no_gene_annot_shared);
+        let exon_novel_shared = Arc::clone(&exon_novel_shared);
+        let exon_annot_shared = Arc::clone(&exon_annot_shared);
+        let r_gap_annot_shared = Arc::clone(&r_gap_annot_shared);
+        let q_gap_annot_shared = Arc::clone(&q_gap_annot_shared);
+        let no_match_annot_shared = Arc::clone(&no_match_annot_shared);
+        let no_match_novel_shared = Arc::clone(&no_match_novel_shared);
         let end_gap_outline_shared = Arc::clone(&end_gap_outline_shared);
         let ceiling_outline_shared = Arc::clone(&ceiling_outline_shared);
         
@@ -117,9 +118,6 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                 let adjusted_len = seq.len() as i32 - tail_len;
 
                 let (size, sketch) = frac_min_hash(&seq, k, a,s);
-                //sketch: hash score of kmer: (list of positions where kmer is located)
-                //size: total # of kmers in the sketch (w/ multiplicity)
-
                 let mut no_match = 0;
 
                 let mut opt_similarity = -1.0 * f32::INFINITY;   
@@ -198,12 +196,11 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                 else if opt_num_matches == 0{
                     if adjusted_len >= 250{
                         let mut AS = as_shared.write().unwrap();
-                        AS.entry(id.clone()).or_insert(i);
                         if id.contains("novel"){
-                            *no_gene_novel_shared.write().unwrap() += 1;
+                            *no_match_novel_shared.write().unwrap() += 1;
                         }
                         else{
-                            *no_gene_annot_shared.write().unwrap() += 1;
+                            *no_match_annot_shared.write().unwrap() += 1;
                         }
                     }
                 }
@@ -212,10 +209,10 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                     let mut AS = as_shared.write().unwrap();
                     AS.entry(id.clone()).or_insert(i);
                     if id.contains("novel"){
-                        *end_gap_novel_shared.write().unwrap() += 1;   
+                        *exon_novel_shared.write().unwrap() += 1;   
                     }
                     else{
-                        *end_gap_annot_shared.write().unwrap() += 1;
+                        *q_gap_annot_shared.write().unwrap() += 1;
                     }             
                 }
 
@@ -223,22 +220,19 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                     let mut AS = as_shared.write().unwrap();
                     AS.entry(id.clone()).or_insert(i);
                     if id.contains("novel"){
-                        *ref_gap_novel_shared.write().unwrap() += 1;
+                        *exon_novel_shared.write().unwrap() += 1;
                     }
                     else{
-                        *ref_gap_annot_shared.write().unwrap() += 1;
+                        *r_gap_annot_shared.write().unwrap() += 1;
                     }  
                 }
                                 
                 else{
-                        let mut ref_map = ref_map_shared.write().unwrap(); 
-                        ref_map.entry(opt_ref_match.clone()).or_insert(Vec::new()).push(build_match(id.clone(), opt_similarity, i, opt_chain as f32, adjusted_len as usize));
-
-                        drop(ref_map);
-
+                    let mut ref_map = ref_map_shared.write().unwrap(); 
+                    ref_map.entry(opt_ref_match.clone()).or_insert(Vec::new()).push(build_match(id.clone(), opt_similarity, i, opt_chain as f32, adjusted_len as usize));
+                    drop(ref_map);
                 }      
             }
-
         });
         handles.push(handle);
     }
@@ -248,102 +242,110 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     } 
 
     let mut ref_map = ref_map_shared.write().unwrap();
+    let mut additional:HashMap<String, usize> = HashMap::new();
 
-    println!("Novel w/ gaps: {}", as_novel_shared.read().unwrap());
-    println!("Annot w/ gaps: {}", as_annot_shared.read().unwrap());
+    println!("Annot AS: {}", as_annot_shared.read().unwrap());
+    println!("Annot ref gap: {}", r_gap_annot_shared.read().unwrap());
+    println!("Annot query gap: {}", q_gap_annot_shared.read().unwrap());
+    println!("Novel no match: {}", no_match_novel_shared.read().unwrap());
+    println!("Annot no match: {}", no_match_annot_shared.read().unwrap());
 
-    println!("Novel reads with end gaps: {}", end_gap_novel_shared.read().unwrap());
-    println!("Annotated reads with end gaps: {}", end_gap_annot_shared.read().unwrap());
+    if mode == "quantify".to_string(){
 
-    println!("Novel reads with end gaps on the reference: {}", ref_gap_novel_shared.read().unwrap());
-    println!("Annotated reads with end gaps on the reference: {}", ref_gap_annot_shared.read().unwrap());
-    println!("Novel reads with no kmer matches: {}", no_gene_novel_shared.read().unwrap());
-    println!("Annotated reads with no kmer matches: {}", no_gene_annot_shared.read().unwrap());
+        let scale_file = output.clone() + ".scale_factors.csv";
+        let scale_factor = Path::new(&scale_file);
+        let mut scale_outline = "".to_string();
+        scale_outline.push_str("Transcript,Group Count,Scale\n");
 
-    let num_AS = *as_novel_shared.read().unwrap() + *as_annot_shared.read().unwrap();
-    println!("Num AS {}", num_AS);
-    let mut avg_sq:Vec<i32> = Vec::new();
-    let mut group_avg_sq:HashMap<String, i32> = HashMap::new();
-
-    let sim_ceiling = B * (1.0 - k as f32 *e);
-
-    for iso in ref_map.keys(){
-        let mut scores:Vec<f32> = Vec::new();
-        let num_reads = ref_map.get(iso).expect("msg").len();
-
-        for read in ref_map.get(iso).expect("msg").iter(){
-            scores.push(read.similarity);             
-        }   
-
-        let score_avg = (1000.0 * scores.iter().sum::<f32>() / scores.len() as f32) as i32;
-        if score_avg >= 0{
-            group_avg_sq.entry(iso.clone()).or_insert(score_avg*score_avg);
-            for _i in 0..num_reads{
-                avg_sq.push(score_avg*score_avg);
-            }  
-        }
-    }
-
-    let mut ATSS:HashMap<String, usize> = HashMap::new();
-    let mut ATSS_novel = *end_gap_novel_shared.read().unwrap() + *ref_gap_novel_shared.read().unwrap() + *no_gene_novel_shared.read().unwrap();
-    let mut ATSS_annot = *end_gap_annot_shared.read().unwrap() + *ref_gap_annot_shared.read().unwrap() + *no_gene_annot_shared.read().unwrap();
-
-    avg_sq.sort();
-    let mut cand_to_select = (c * num_AS as f64) as usize;
-
-    println!("Num ATSS from Novel Exons: {}", ATSS_annot+ATSS_novel);
-
-    if (ATSS_annot+ATSS_novel) > cand_to_select{
-        cand_to_select = 0;
-    }
-    else{
-        cand_to_select -= (ATSS_annot+ATSS_novel) as usize;
-    }
-
-    println!("Cand to select: {}", cand_to_select);
-
-    if cand_to_select > 0{
-        if avg_sq.len() > 0{
-            let mut avg_sq_threshold = avg_sq.pop().expect("msg");
-
-            if cand_to_select < avg_sq.len(){
-                avg_sq_threshold = avg_sq[cand_to_select];
+        for (iso, matches) in ref_map.iter(){
+            if matches.len() > l{
+                let mut rng = rand::rng();
+                let chosen = matches.choose_multiple(&mut rng, l);
+                let scale = matches.len() as f64 / chosen.len() as f64;
+                for read in chosen{
+                    additional.entry(read.sample_id.clone()).or_insert(read.chunk);
+                }               
+                scale_outline.push_str(&(iso.clone()+ "," + &matches.len().to_string() + "," + &scale.to_string() + "\n"));
             }
+            else{
+                for read in matches.iter(){
+                    additional.entry(read.sample_id.clone()).or_insert(read.chunk);
+                }
+                let scale = matches.len() as f64 / l as f64;
+                scale_outline.push_str(&(iso.clone()+ "," + &matches.len().to_string() + "," + &scale.to_string() + "\n"));
+            } 
+        }
+        fs::write(scale_factor, scale_outline);  
+    }
 
-            println!("Avg score threshold: {}", avg_sq_threshold);
+    if mode == "discovery".to_string(){
 
-            for (iso, avg_sq) in group_avg_sq.into_iter(){
+        println!("Novel w/ gaps: {}", as_novel_shared.read().unwrap());
+        println!("Annot w/ gaps: {}", as_annot_shared.read().unwrap());
+        let num_AS = *as_novel_shared.read().unwrap() + *as_annot_shared.read().unwrap();
 
-                let matches = ref_map.get(&iso).expect("msg");
-            
-                if avg_sq <= avg_sq_threshold{
-                    for read in matches.iter(){
-                        if read.similarity < sim_ceiling{        
+        let mut avg_sq:Vec<i32> = Vec::new();
+        let mut group_avg_sq:HashMap<String, i32> = HashMap::new();
+        let sim_ceiling = B * (1.0 - k as f32 *e);
 
-                            ATSS.entry(read.sample_id.clone()).or_insert(read.chunk);           
+        for iso in ref_map.keys(){
+            let mut scores:Vec<f32> = Vec::new();
+            let num_reads = ref_map.get(iso).expect("msg").len();
 
-                            if read.sample_id.contains("novel"){
-                                ATSS_novel += 1;
+            for read in ref_map.get(iso).expect("msg").iter(){
+                scores.push(read.similarity);             
+            }   
+
+            let score_avg = (1000.0 * scores.iter().sum::<f32>() / scores.len() as f32) as i32;
+            if score_avg >= 0{
+                group_avg_sq.entry(iso.clone()).or_insert(score_avg*score_avg);
+                for _i in 0..num_reads{
+                    avg_sq.push(score_avg*score_avg);
+                }  
+            }
+        }
+
+        let mut ATSS_novel = *exon_novel_shared.read().unwrap();
+        let mut ATSS_annot = *exon_annot_shared.read().unwrap();
+
+        avg_sq.sort();
+        let mut cand_to_select = (c * num_AS as f64) as usize;
+        if (ATSS_annot+ATSS_novel) > cand_to_select{
+            cand_to_select = 0;
+        }
+        else{
+            cand_to_select -= (ATSS_annot+ATSS_novel) as usize;
+        }
+
+        if cand_to_select > 0{
+            if avg_sq.len() > 0{
+                let mut avg_sq_threshold = avg_sq.pop().expect("msg");
+                if cand_to_select < avg_sq.len(){
+                    avg_sq_threshold = avg_sq[cand_to_select];
+                }
+                for (iso, avg_sq) in group_avg_sq.into_iter(){
+                    let matches = ref_map.get(&iso).expect("msg");            
+                    if avg_sq <= avg_sq_threshold{
+                        for read in matches.iter(){
+                            if read.similarity < sim_ceiling{        
+                                additional.entry(read.sample_id.clone()).or_insert(read.chunk);           
+                                if read.sample_id.contains("novel"){
+                                    ATSS_novel += 1;
+                                }
+                                else{
+                                    ATSS_annot += 1;
+                                }                                                                                  
                             }
-                            else{
-                                ATSS_annot += 1;
-                            }                                                                                  
                         }
                     }
-                }
-            }        
+                }        
+            }
         }
+        println!("ATSS novel: {}", ATSS_novel);
+        println!("ATSS annot: {}", ATSS_annot);
     }
-    
-    println!("ATSS novel: {}", ATSS_novel);
-    println!("ATSS annot: {}", ATSS_annot);
 
-    fs::write(end_gap_path, end_gap_outline_shared.read().unwrap().clone());
-    fs::write(ceiling_path, ceiling_outline_shared.read().unwrap().clone());
-
-let as_novel = as_novel_shared.read().unwrap().clone();
-let as_annot = as_annot_shared.read().unwrap().clone(); 
-(as_shared, ATSS, as_novel, as_annot, ATSS_novel as i32, ATSS_annot as i32)
+(as_shared, additional)
  }
 
 pub fn kmer_chain(sample_kmers:&HashMap<i64, Vec<i32>>, ref_kmers:&HashMap<i64, Vec<i32>>, m:i32) -> (i32, i32, (i32, i32), (i32, i32)){
