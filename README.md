@@ -27,7 +27,7 @@ KuPID is a preprocessing method designed for RNAseq analysis of long transcript 
 <!-- install -->
 ## Install
 
-KuPID is currently available as a rust crate. 
+KuPID is currently available to build from source as a rust crate. 
 
 Requirements:
 1. rust programming language and associated tools such as cargo are required and assumed to be in PATH.
@@ -35,7 +35,7 @@ Requirements:
 3. make
 
 ```
-git clone https://github.com/bluenote-1577/skani
+git clone https://github.com/mboro2000/KuPID.git
 cd skani
 
 # If default rust install directory is ~/.cargo
