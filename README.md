@@ -84,7 +84,7 @@ mkdir minimap2_output
 #Align non-processed reads
 ./minimap2 -ax splice:hq -uf --MD ~/KuPID/reference_data/Homo_sapiens.GRCh38.dna.chromosome.1.fa ~/KuPID/sample/small_sample.ccs.fasta -t 3 -o ~/KuPID/sample/minimap2_output/small_sample.sam
 samtools view -S -b ~/KuPID/sample/minimap2_output/small_sample.sam > ~/KuPID/sample/minimap2_output/small_sample.bam
-samtools sort ~/KuPID/sample/minimap2_output/small_sample.bam -o ~/sample/minimap2_output/small_sample.sorted.bam
+samtools sort ~/KuPID/sample/minimap2_output/small_sample.bam -o ~/KuPID/sample/minimap2_output/small_sample.sorted.bam
 samtools index ~/KuPID/sample/minimap2_output/small_sample.sorted.bam
 
 #Align KuPID-processed reads
@@ -98,7 +98,7 @@ done
 #Apply stringtie2
 ./stringtie -L ~/KuPID/sample/minimap2_output/small_sample.sorted.bam -G ~/KuPID/reference_data/gencode.v48.annotation.gtf -o ~/KuPID/sample/stringtie2.small_sample.gtf
 for mode in discovery quantify;do
-./stringtie -L ~/KuPID/sample/minimap2_output/small_sample.$mode.sorted.bam -G ~/KuPID/reference_data/gencode.v48.annotation.gtf -o ~/sample/stringtie2.small_sample.$mode.gtf
+./stringtie -L ~/KuPID/sample/minimap2_output/small_sample.$mode.sorted.bam -G ~/KuPID/reference_data/gencode.v48.annotation.gtf -o ~/KuPID/sample/stringtie2.small_sample.$mode.gtf
 done
 
 ```
