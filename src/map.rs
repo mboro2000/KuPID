@@ -170,9 +170,8 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     } 
 
     let ref_map = ref_map_shared.write().unwrap();
-    let mut selected = selected_shared.write().unwrap();
-
     if mode == "quantify".to_string(){
+        let mut selected = selected_shared.write().unwrap();
         let scale_file = output.clone() + ".scale_factors.csv";
         let scale_factor = Path::new(&scale_file);
         let mut scale_outline = "".to_string();
@@ -200,6 +199,7 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     }
 
     if mode == "discovery".to_string(){
+        let mut selected = selected_shared.write().unwrap();
         let mut avg_sq:Vec<i32> = Vec::new();
         let mut group_avg_sq:HashMap<String, i32> = HashMap::new();
         let sim_ceiling = B * (1.0 - k as f32 *e);
@@ -249,4 +249,5 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     }
 
 selected_shared
+
  }
