@@ -64,15 +64,14 @@ To complete the downstream analysis, users should have access to the following s
 <h4 align="left">Download reference data</h4>
 
 ```
-cd KuPID
-mkdir reference_data
-cd reference_data
+cd KuPID/reference_data
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_48/gencode.v48.transcripts.fa.gz
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_48/gencode.v48.annotation.gtf.gz
 wget https://ftp.ensembl.org/pub/release-114/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.1.fa.gz
 gzip -d gencode.v48.transcripts.fa.gz
 gzip -d gencode.v48.annotation.gtf.gz
 gzip -d Homo_sapiens.GRCh38.dna.chromosome.1.fa.gz
+python edit_heading.py Homo_sapiens.GRCh38.dna.chromosome.1.fa "chr1"
 ```
 
 <h4 align="left">Apply KuPID</h4>
