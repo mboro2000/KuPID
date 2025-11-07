@@ -36,7 +36,7 @@ Requirements:
 
 ```
 git clone https://github.com/mboro2000/KuPID.git
-cd skani
+cd KuPID
 
 # If default rust install directory is ~/.cargo
 cargo install --path . --root ~/.cargo
@@ -47,6 +47,14 @@ cargo install --path . --root ~/.cargo
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Quickstart
-
+## Sample Tutorial
+<h3 align="left">Downloads reference data</h3>
+```
+mkdir reference_data
+cd reference_data
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_48/gencode.v48.transcripts.fa.gz
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_48/gencode.v48.annotation.gtf.gz
+gzip -d gencode.v48.transcripts.fa.gz
+gzip -d gencode.v48.annotation.gtf.gz
+```
 ## Output
