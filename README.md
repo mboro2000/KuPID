@@ -112,7 +112,7 @@ mkdir gffcompare
 for trial in stringtie2.small_sample stringtie2.small_sample.discovery stringtie2.small_sample.quantify;do
 ./gffcompare -r ~/KuPID/reference_data/gencode.v48.annotation.gtf ~/KuPID/sample/$trial.gtf -o ~/KuPID/sample/gffcompare/$trial.comp_to_ref
 ## Extract the transcript models that are predicted to be novel
-python ~/KuPID/sample/predicted_novel.py "/KuPID/sample/gffcompare/$trial.comp_to_ref.tracking" "~/KuPID/sample/$type.gtf" "~/KuPID/sample/$trial.predicted_novel.gtf"
+python ~/KuPID/sample/predicted_novel.py "/KuPID/sample/gffcompare/$trial.comp_to_ref.tracking" "~/KuPID/sample/$trial.gtf" "~/KuPID/sample/$trial.predicted_novel.gtf"
 ./gffcompare -r ~/KuPID/sample/small_sample.novel.gtf ~/KuPID/sample/$trial.predicted_novel.gtf -o ~/KuPID/sample/gffcompare/$trial.comp_to_novel
 done
 ```
