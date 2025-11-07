@@ -57,6 +57,7 @@ To complete the downstream analysis, users should have access to the following s
 <h4 align="left">Download reference data</h4>
 
 ```
+cd KuPID
 mkdir reference_data
 cd reference_data
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_48/gencode.v48.transcripts.fa.gz
@@ -104,6 +105,17 @@ done
 ```
 
 <h4 align="left">Analyze Discovery Results</h4>
+
+```
+cd KuPID/sample
+mkdir gffcompare
+for trial in stringtie2.small_sample stringtie2.small_sample.discovery stringtie2.small_sample.quantify;do
+./gffcompare -r ~/KuPID/reference_data/gencode.v48.annotation.gtf ~/KuPID/sample/$trial.gtf -o ~/KuPID/sample/gffcompare/$trial.comp_to_ref
+## Extract the transcript models that are predicted to be novel
+python ~/KuPID/sample/predicted_novel.py "/KuPID/sample/gffcompare/$trial.comp_to_ref.tracking" "~/KuPID/sample/$type.gtf" "~/KuPID/sample/$trial.predicted_novel.gtf"
+./gffcompare -r ~/KuPID/sample/small_sample.novel.gtf ~/KuPID/sample/$trial.predicted_novel.gtf -o ~/KuPID/sample/gffcompare/$trial.comp_to_novel
+done
+```
 
 
 ## Output
