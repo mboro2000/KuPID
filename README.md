@@ -115,6 +115,11 @@ for trial in stringtie2.small_sample stringtie2.small_sample.discovery stringtie
 python ~/KuPID/sample/predicted_novel.py "/KuPID/sample/gffcompare/$trial.comp_to_ref.tracking" "~/KuPID/sample/$trial.gtf" "~/KuPID/sample/$trial.predicted_novel.gtf"
 ./gffcompare -r ~/KuPID/sample/small_sample.novel.gtf ~/KuPID/sample/$trial.predicted_novel.gtf -o ~/KuPID/sample/gffcompare/$trial.comp_to_novel
 done
+
+### gffcompare will report the precision and accuracy of novel transcript models assembled by stringtie2. To view this output, use:
+for trial in stringtie2.small_sample stringtie2.small_sample.discovery stringtie2.small_sample.quantify;do
+cat ~/KuPID/sample/gffcompare/$trial.comp_to_novel
+done
 ```
 
 
