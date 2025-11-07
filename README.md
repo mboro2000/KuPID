@@ -11,9 +11,7 @@
   <ol>
     <li><a href="#introduction">Introduction</a> </li>
     <li><a href="#install">Install</a></li>
-    <li><a href="#quickstart">Quickstart</a></li>
-    <li><a href="#output">Output</a></li>
-    <li><a href="#citation">Citation</a></li>
+    <li><a href="#tutorial">Sample Tutorial</a></li>
   </ol>
 </details>
 
