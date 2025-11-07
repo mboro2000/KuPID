@@ -47,7 +47,7 @@ cargo install --path . --root ~/.cargo
 
 ## Sample Tutorial
 
-To demonstrate KuPID's abilities, we've provided an RNAseq sample of PacBio HiFi reads sequenced from 3500 genes in the human genome. In addition, we've provided an annotation file of the novel isoforms present in the sample.
+To demonstrate KuPID's abilities, we've provided an RNAseq sample of PacBio HiFi reads sequenced from chr1 of the human genome. In addition, we've provided an annotation file of the novel isoforms present in the sample.
 
 To complete the downstream analysis, users should have access to the following software:
 1. minimap2
@@ -61,8 +61,10 @@ mkdir reference_data
 cd reference_data
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_48/gencode.v48.transcripts.fa.gz
 wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_48/gencode.v48.annotation.gtf.gz
+wget https://ftp.ensembl.org/pub/release-114/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome.1.fa.gz
 gzip -d gencode.v48.transcripts.fa.gz
 gzip -d gencode.v48.annotation.gtf.gz
+gzip -d Homo_sapiens.GRCh38.dna.chromosome.1.fa.gz
 ```
 
 <h4 align="left">Apply KuPID</h4>
@@ -70,31 +72,33 @@ gzip -d gencode.v48.annotation.gtf.gz
 ```
 cd KuPID/src
 for mode in discovery quantify;do
-cargo run -- -o "small_sample" -r "~/reference_data/gencode.v48.transcripts.fa" -i "~/sample/5000_genes.ccs.fasta" -k 22 -s 0.1 -e 0.002 -n 30 -b 16 -m 3 -B 0.98 -t 1 -c 1.5 -l 5 -g 100 --mode $mode
+cargo run -- -o "small_sample" -r "~/KuPID/reference_data/gencode.v48.transcripts.fa" -i "~/KuPID/sample/small_sample.ccs.fasta" -k 22 -s 0.1 -e 0.002 -n 30 -b 16 -m 3 -B 0.98 -t 1 -c 1.5 -l 5 -g 100 --mode $mode
 done
 ```
 
 <h4 align="left">Downstream Alignment and Isoform Discovery</h4>
 
 ```
+cd KuPID/sample
+mkdir minimap2_output
 #Align non-processed reads
-./minimap2 -ax splice:hq -uf --MD ~/reference_data/GRCh38.chr1-22.fa ~/sample/small_sample.ccs.fasta -t 3 -o ~/sample/minimap2_output/small_sample.sam
-samtools view -S -b ~/sample/minimap2_output/small_sample.sam > ~/sample/minimap2_output/small_sample.bam
-samtools sort ~/sample/minimap2_output/small_sample.bam -o ~/sample/minimap2_output/small_sample.sorted.bam
-samtools index ~/sample/minimap2_output/small_sample.sorted.bam
+./minimap2 -ax splice:hq -uf --MD ~/KuPID/reference_data/Homo_sapiens.GRCh38.dna.chromosome.1.fa ~/KuPID/sample/small_sample.ccs.fasta -t 3 -o ~/KuPID/sample/minimap2_output/small_sample.sam
+samtools view -S -b ~/KuPID/sample/minimap2_output/small_sample.sam > ~/KuPID/sample/minimap2_output/small_sample.bam
+samtools sort ~/KuPID/sample/minimap2_output/small_sample.bam -o ~/sample/minimap2_output/small_sample.sorted.bam
+samtools index ~/KuPID/sample/minimap2_output/small_sample.sorted.bam
 
 #Align KuPID-processed reads
 for mode in discovery quantify;do
-./minimap2 -ax splice:hq -uf --MD ~/reference_data/GRCh38.chr1-22.fa ~/KuPID/src/small_sample.$mode.fa -t 1 -o /usr1/mborowia/11_6_KuPID/minimap2_output/small_sample.$mode.sam
-samtools view -S -b ~/sample/minimap2_output/small_sample.$mode.sam > ~/sample/minimap2_output/small_sample.$mode.bam
-samtools sort ~/sample/minimap2_output/small_sample.$mode.bam -o ~/sample/minimap2_output/small_sample.$mode.sorted.bam
-samtools index ~/sample/minimap2_output/small_sample.$mode.sorted.bam
+./minimap2 -ax splice:hq -uf --MD ~/KuPID/reference_data/Homo_sapiens.GRCh38.dna.chromosome.1.fa ~/KuPID/src/small_sample.$mode.fa -t 1 -o ~/KuPID/sample/minimap2_output/small_sample.$mode.sam
+samtools view -S -b ~/KuPID/sample/minimap2_output/small_sample.$mode.sam > ~/KuPID/sample/minimap2_output/small_sample.$mode.bam
+samtools sort ~/KuPID/sample/minimap2_output/small_sample.$mode.bam -o ~/KuPID/sample/minimap2_output/small_sample.$mode.sorted.bam
+samtools index ~/KuPID/sample/minimap2_output/small_sample.$mode.sorted.bam
 done
 
 #Apply stringtie2
-./stringtie -L ~/sample/minimap2_output/small_sample.sorted.bam -G ~/reference_data/gencode.v48.annotation.gtf -o ~/sample/stringtie2.small_sample.gtf
+./stringtie -L ~/KuPID/sample/minimap2_output/small_sample.sorted.bam -G ~/KuPID/reference_data/gencode.v48.annotation.gtf -o ~/KuPID/sample/stringtie2.small_sample.gtf
 for mode in discovery quantify;do
-./stringtie -L ~/sample/minimap2_output/small_sample.$mode.sorted.bam -G ~/reference_data/gencode.v48.annotation.gtf -o ~/sample/stringtie2.small_sample.$mode.gtf
+./stringtie -L ~/KuPID/sample/minimap2_output/small_sample.$mode.sorted.bam -G ~/KuPID/reference_data/gencode.v48.annotation.gtf -o ~/sample/stringtie2.small_sample.$mode.gtf
 done
 
 ```
