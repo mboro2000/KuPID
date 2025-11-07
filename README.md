@@ -81,9 +81,24 @@ done
 ```
 #Align non-processed reads
 ./minimap2 -ax splice:hq -uf --MD ~/reference_data/GRCh38.chr1-22.fa ~/sample/small_sample.ccs.fasta -t 3 -o ~/sample/minimap2_output/small_sample.sam
+samtools view -S -b ~/sample/minimap2_output/small_sample.sam > ~/sample/minimap2_output/small_sample.bam
+samtools sort ~/sample/minimap2_output/small_sample.bam -o ~/sample/minimap2_output/small_sample.sorted.bam
+samtools index ~/sample/minimap2_output/small_sample.sorted.bam
 
 #Align KuPID-processed reads
+for mode in discovery quantify;do
 ./minimap2 -ax splice:hq -uf --MD ~/reference_data/GRCh38.chr1-22.fa ~/KuPID/src/small_sample.$mode.fa -t 1 -o /usr1/mborowia/11_6_KuPID/minimap2_output/small_sample.$mode.sam
+samtools view -S -b ~/sample/minimap2_output/small_sample.$mode.sam > ~/sample/minimap2_output/small_sample.$mode.bam
+samtools sort ~/sample/minimap2_output/small_sample.$mode.bam -o ~/sample/minimap2_output/small_sample.$mode.sorted.bam
+samtools index ~/sample/minimap2_output/small_sample.$mode.sorted.bam
+done
+
+#Apply stringtie2
+./stringtie -L ~/sample/minimap2_output/small_sample.sorted.bam -G ~/reference_data/gencode.v48.annotation.gtf -o ~/sample/stringtie2.small_sample.gtf
+for mode in discovery quantify;do
+./stringtie -L ~/sample/minimap2_output/small_sample.$mode.sorted.bam -G ~/reference_data/gencode.v48.annotation.gtf -o ~/sample/stringtie2.small_sample.$mode.gtf
+done
+
 ```
 
 <h4 align="left">Analyze Discovery Results</h4>
