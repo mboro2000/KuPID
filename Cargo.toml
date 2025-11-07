@@ -1,5 +1,5 @@
 [package]
-name = "isoforms"
+name = "KuPID"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,3 +10,4 @@ bio = "2.0.1"
 rand = "0.9.0"
 
 clap = { version = "4.5.34", features = ["derive"] }
+math = "0.11.0"
