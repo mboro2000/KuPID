@@ -11,6 +11,7 @@
   <ol>
     <li><a href="#introduction">Introduction</a> </li>
     <li><a href="#install">Install</a></li>
+    <li><a href="#input">Input</a></li>
     <li><a href="#tutorial">Sample Tutorial</a></li>
   </ol>
 </details>
@@ -44,6 +45,12 @@ cargo install --path . --root ~/.cargo
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Input
+
+To function, KuPID requires the following inputs:
+1. RNAseq sample (-i); should be formatted as a .fasta of the sequenced reads
+2. Reference transcriptome (-r); should be formatted of a .fasta of the reference isoforms
 
 ## Sample Tutorial
 
@@ -121,6 +128,3 @@ for trial in stringtie2.small_sample stringtie2.small_sample.discovery stringtie
 cat ~/KuPID/sample/gffcompare/$trial.comp_to_novel
 done
 ```
-
-
-## Output
