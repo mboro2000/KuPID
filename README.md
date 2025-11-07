@@ -48,7 +48,16 @@ cargo install --path . --root ~/.cargo
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Sample Tutorial
-<h3 align="left">Downloads reference data</h3>
+
+To demonstrate KuPID's abilities, we've provided an RNAseq sample of PacBio HiFi reads sequenced from 3500 genes in the human genome. In addition, we've provided an annotation file of the novel isoforms present in the sample.
+
+To complete the downstream analysis, users should have access to the following software:
+1. minimap2
+2. stringtie2
+3. gffcompare
+
+<h4 align="left">Download reference data</h4>
+
 ```
 mkdir reference_data
 cd reference_data
@@ -57,4 +66,27 @@ wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_48/gencod
 gzip -d gencode.v48.transcripts.fa.gz
 gzip -d gencode.v48.annotation.gtf.gz
 ```
+
+<h4 align="left">Apply KuPID</h4>
+
+```
+cd KuPID/src
+for mode in discovery quantify;do
+cargo run -- -o "small_sample" -r "~/reference_data/gencode.v48.transcripts.fa" -i "~/sample/5000_genes.ccs.fasta" -k 22 -s 0.1 -e 0.002 -n 30 -b 16 -m 3 -B 0.98 -t 1 -c 1.5 -l 5 -g 100 --mode $mode
+done
+```
+
+<h4 align="left">Downstream Alignment and Isoform Discovery</h4>
+
+```
+#Align non-processed reads
+./minimap2 -ax splice:hq -uf --MD ~/reference_data/GRCh38.chr1-22.fa ~/sample/small_sample.ccs.fasta -t 3 -o ~/sample/minimap2_output/small_sample.sam
+
+#Align KuPID-processed reads
+./minimap2 -ax splice:hq -uf --MD ~/reference_data/GRCh38.chr1-22.fa ~/KuPID/src/small_sample.$mode.fa -t 1 -o /usr1/mborowia/11_6_KuPID/minimap2_output/small_sample.$mode.sam
+```
+
+<h4 align="left">Analyze Discovery Results</h4>
+
+
 ## Output
