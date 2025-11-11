@@ -37,8 +37,6 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     let mut handles = vec![];   
     let as_reads = 0;
     let novel_exon_reads = 0;
-    let r_gap_annot = 0;
-    let q_gap_annot = 0;
 
     let ref_sketches = ref_sketches_shared.read().unwrap();
     let kmer_map = create_kmer_map(&ref_sketches, b);
@@ -50,19 +48,6 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     let as_reads_shared = Arc::new(RwLock::new(as_reads));
     let novel_exon_shared = Arc::new(RwLock::new(novel_exon_reads));
 
-    let r_gap_annot_shared = Arc::new(RwLock::new(r_gap_annot));
-    let q_gap_annot_shared = Arc::new(RwLock::new(q_gap_annot));
-
-    let end_gap_file = output.clone() + ".end_gap_reads.csv";
-    let end_gap_path = Path::new(&end_gap_file);
-    let mut end_gap_outline = "id,opt ref gap,query gap from 5p,query gap from 3p,internal gap,optimal score\n".to_string();
-    let end_gap_outline_shared = Arc::new(RwLock::new(end_gap_outline));
-
-    let ceiling_file = output.clone() + ".score_ceiling.csv";
-    let ceiling_path = Path::new(&ceiling_file);
-    let mut ceiling_outline = "read,score\n".to_string();
-    let ceiling_outline_shared = Arc::new(RwLock::new(ceiling_outline));
-
     for i in 0..t as usize{
         let sample_chunks_shared = Arc::clone(&sample_chunks_shared); 
         let kmer_map_shared = Arc::clone(&kmer_map_shared);
@@ -71,11 +56,6 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
         let selected_shared = Arc::clone(&selected_shared);
         let as_reads_shared = Arc::clone(&as_reads_shared);
         let novel_exon_shared = Arc::clone(&novel_exon_shared);
-
-        let r_gap_annot_shared = Arc::clone(&r_gap_annot_shared);
-        let q_gap_annot_shared = Arc::clone(&q_gap_annot_shared);
-        let end_gap_outline_shared = Arc::clone(&end_gap_outline_shared);
-        let ceiling_outline_shared = Arc::clone(&ceiling_outline_shared);
         
         let handle = thread::spawn(move || {
             let guard = sample_chunks_shared.read().unwrap();
@@ -128,13 +108,6 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                     }              
                 }
 
-                let mut end_gap_outline = end_gap_outline_shared.write().unwrap();
-                end_gap_outline.push_str(&(id.to_string() + "," + &(opt_chain.ref_gap).to_string() + "," + &(opt_chain.query_gap).to_string() + "," + &(opt_chain.gap).to_string() + "," + &(opt_chain.similarity).to_string() + "\n"));
-                drop(end_gap_outline);
-                
-                let mut ceiling_outline = ceiling_outline_shared.write().unwrap();
-                ceiling_outline.push_str(&(id.to_string() + "," + &(opt_chain.similarity.to_string()) + "\n"));
-
                 if opt_chain.gap > n{                    
                     let mut selected = selected_shared.write().unwrap();
                     selected.entry(id.clone()).or_insert(i);
@@ -143,18 +116,12 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                 else if  opt_chain.query_gap > n{
                     let mut selected = selected_shared.write().unwrap();
                     selected.entry(id.clone()).or_insert(i);
-                    *novel_exon_shared.write().unwrap() += 1;
-                    if id.contains("novel") == false{
-                        *q_gap_annot_shared.write().unwrap() += 1;
-                    }             
+                    *novel_exon_shared.write().unwrap() += 1;          
                 }
                 else if opt_chain.ref_gap > g{
                     let mut selected = selected_shared.write().unwrap();
                     selected.entry(id.clone()).or_insert(i);
-                    *novel_exon_shared.write().unwrap() += 1;
-                    if id.contains("novel") == false{
-                        *r_gap_annot_shared.write().unwrap() += 1;
-                    }  
+                    *novel_exon_shared.write().unwrap() += 1; 
                 }             
                 else{
                     let mut ref_map = ref_map_shared.write().unwrap(); 
@@ -247,7 +214,5 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
             }
         }
     }
-
 selected_shared
-
  }
