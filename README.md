@@ -68,7 +68,7 @@ python edit_heading.py Homo_sapiens.GRCh38.dna.chromosome.1.fa "chr1"
 ```
 cd KuPID/src
 for mode in discovery quantify;do
-cargo run -- -o "small_sample" -r "~/KuPID/reference_data/gencode.v48.transcripts.fa" -i "~/KuPID/sample/small_sample.ccs.fasta" -k 22 -s 0.1 -e 0.002 -n 30 -b 16 -m 3 -B 0.98 -t 1 -c 1.5 -l 5 -g 100 --mode $mode
+cargo run -- -o "small_sample" -r "~/KuPID/reference_data/gencode.v48.transcripts.fa" -i "~/KuPID/sample/small_sample.ccs.fasta" -k 22 -s 0.1 -e 0.002 -n 30 -b 16 -m 3 -B 0.98 -t 1 -c 1.5 -l 5 -z 100 --mode $mode
 done
 ```
 
