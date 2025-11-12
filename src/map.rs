@@ -30,7 +30,7 @@ pub fn create_kmer_map(ref_sketch:&HashMap<String, Sketch>, b:usize ) -> HashMap
     kmer_map
 }
 
-pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<String, Sketch>>>, sample_chunks_shared:Arc<RwLock<Vec<HashMap<String, String>>>>, b:usize, t: i32, n:i32, k:i32, s:f64, m:i32, e:f32, B:f32, c:f64, mode:String, l:usize, g:i32)
+pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<String, Sketch>>>, sample_chunks_shared:Arc<RwLock<Vec<HashMap<String, String>>>>, b:usize, t: i32, n:i32, k:i32, s:f64, m:i32, e:f32, B:f32, c:f64, mode:String, l:usize, z:i32)
  -> (Arc<RwLock<HashMap<String, usize>>>) {
     let ref_map:HashMap<String, Vec<Match>> = HashMap::new(); 
     let selected:HashMap<String, usize> = HashMap::new();
@@ -118,7 +118,7 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                     selected.entry(id.clone()).or_insert(i);
                     *novel_exon_shared.write().unwrap() += 1;          
                 }
-                else if opt_chain.ref_gap > g{
+                else if opt_chain.ref_gap > z{
                     let mut selected = selected_shared.write().unwrap();
                     selected.entry(id.clone()).or_insert(i);
                     *novel_exon_shared.write().unwrap() += 1; 
@@ -216,3 +216,4 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     }
 selected_shared
  }
+
