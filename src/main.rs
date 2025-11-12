@@ -28,7 +28,7 @@ fn main() {
     let n = cli.n;
     let mode = cli.mode;
     let l = cli.l;
-    let g = cli.g;
+    let z = cli.z;
 
     env::set_var("RUST_BACKTRACE", "1");
     
@@ -39,7 +39,7 @@ fn main() {
     let sample_data = sketch::read_input(t, &sample_file);
     let sample_data_shared = Arc::new(RwLock::new(sample_data));
     //Psuedo-align RNAseq reads to reference transcriptome    
-    let selected = map::find_ref_matches(output.clone(), ref_sketch, Arc::clone(&sample_data_shared), b, t, n, k, s, m, e as f32, B, c, mode.clone(), l, g);       
+    let selected = map::find_ref_matches(output.clone(), ref_sketch, Arc::clone(&sample_data_shared), b, t, n, k, s, m, e as f32, B, c, mode.clone(), l, z);       
     //Output the filtered reads
     let output_file = output.clone() + "." + &mode + ".fa";
     let output_path = Path::new(&output_file);
@@ -51,3 +51,4 @@ fn main() {
     fs::write(output_path, output_line); 
     
     }
+
