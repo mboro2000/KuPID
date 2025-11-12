@@ -5,17 +5,6 @@
   <h1 align="left">KuPID: Kmer-based Upstream Preprocessing for Isoform Discovery</h1>
 </div>
 
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li><a href="#introduction">Introduction</a> </li>
-    <li><a href="#install">Install</a></li>
-    <li><a href="#input">Input</a></li>
-    <li><a href="#tutorial">Sample Tutorial</a></li>
-  </ol>
-</details>
-
 <!-- intro -->
 ## Introduction
 
