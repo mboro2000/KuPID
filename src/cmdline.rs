@@ -31,6 +31,7 @@ pub struct Cli {
     pub mode:String,
     #[clap(short='l', default_value_t = 10, help = "Set the number of reads sampled from each predicted annotated isoform")]
     pub l: usize,
-    #[clap(short='g', default_value_t = 100, help = "Set the bp threshold to accept a gap along the reference seq as a novel exon")]
-    pub g: i32
+    #[clap(short='z', default_value_t = 100, help = "Set the bp threshold to accept an unmatched 3'/5' region as a novel exon")]
+    pub z: i32
+
 }
