@@ -27,7 +27,7 @@ for opt, arg in opts:
     elif opt == '-s':
         scale = arg
     elif opt == '-l':
-        l = arg
+        l = int(arg)
     elif opt == '-p':
         process = arg
 
@@ -67,14 +67,9 @@ if method == 'IsoQuant':
 
 if process == 'KuPID':
     scale = pd.read_csv(scale_path)
-    #scale['Transcript'] = scale['Transcript'].str.split("|").apply(lambda x: x[0])
-    scale['Transcript'] = scale['Transcript'].str.split("|")
-    float_rows_A = scale[scale['Transcript'].apply(lambda x: isinstance(x, float))]
-    print(float_rows_A)
-
-    print(scale[scale['Transcript'] == <class 'float'>])
+    scale = scale[~scale['Transcript'].isnull()]
+    scale['Transcript'] = scale['Transcript'].str.split("|").apply(lambda x: x[0])
     scaled = pd.merge(df, scale, on='Transcript', how='outer')
-    
     scaled.fillna(0, inplace=True)
     li = scaled[(scaled['TPM'] > 0) & (scaled['Group Count'] >= l)]['TPM'].min()
     scaled['Scaled Ai'] = np.where(scaled['Group Count'] >= l, (scaled['TPM'] - li) + li*scaled['Scale'], scaled['TPM'])
