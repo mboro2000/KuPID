@@ -14,7 +14,7 @@ argv = sys.argv[1:]
 options = 'amoslp'
 long_options = ['abundances', 'method', 'output', 'scale', 'l', 'preprocessing']
 try:
-    opts, args = getopt.getopt(args, options, long_options)
+    opts, args = getopt.getopt(argv, options, long_options)
 except getopt.error as err:
     print(str(err))
 
