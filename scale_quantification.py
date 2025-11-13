@@ -10,7 +10,6 @@ scale_path = sys.argv[4]
 mode = sys.argv[5]
 l = int(sys.argv[6])
 
-
 if method == 'stringtie2':
     dict = {}
     rows = 0
@@ -48,18 +47,14 @@ if method == 'IsoQuant':
     df['Transcript'] = df['#feature_id']
     df = df[df['TPM'] > 0]
 
-if mode == 'scale':
-    scale = pd.read_csv(scale_path)
-    scale['Transcript'] = scale['Transcript'].str.split("|").apply(lambda x: x[0])
-    scaled = pd.merge(df, scale, on='Transcript', how='outer')
-    scaled.fillna(0, inplace=True)
-    li = scaled[(scaled['TPM'] > 0) & (scaled['Group Count'] >= l)]['TPM'].min()
-    scaled['Scaled Ai'] = np.where(scaled['Group Count'] >= l, (scaled['TPM'] - li) + li*scaled['Scale'], scaled['TPM'])
-    scaled['Scaled Ai'] = np.where(scaled['Scaled Ai'] < 0, 0, scaled['Scaled Ai'])
-    scaled['Scaled Ai'] = np.where(scaled['TPM'] == 0, 0, scaled['Scaled Ai'])
-    total_Ai = scaled['Scaled Ai'].sum()
-    scaled['Scaled TPM'] = 1000000 * scaled['Scaled Ai'] / total_Ai
-    scaled.to_csv(output)
-
-else:
-    df.to_csv(output)
+scale = pd.read_csv(scale_path)
+scale['Transcript'] = scale['Transcript'].str.split("|").apply(lambda x: x[0])
+scaled = pd.merge(df, scale, on='Transcript', how='outer')
+scaled.fillna(0, inplace=True)
+li = scaled[(scaled['TPM'] > 0) & (scaled['Group Count'] >= l)]['TPM'].min()
+scaled['Scaled Ai'] = np.where(scaled['Group Count'] >= l, (scaled['TPM'] - li) + li*scaled['Scale'], scaled['TPM'])
+scaled['Scaled Ai'] = np.where(scaled['Scaled Ai'] < 0, 0, scaled['Scaled Ai'])
+scaled['Scaled Ai'] = np.where(scaled['TPM'] == 0, 0, scaled['Scaled Ai'])
+total_Ai = scaled['Scaled Ai'].sum()
+scaled['Scaled TPM'] = 1000000 * scaled['Scaled Ai'] / total_Ai
+scaled.to_csv(output)
