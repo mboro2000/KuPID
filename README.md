@@ -108,7 +108,7 @@ python ~/scale_quantification.py -a ~/KuPID/sample/stringtie2.small_sample.quant
 python ~/scale_quantification.py -a ~/KuPID/sample/stringtie2.small_sample.quantify.gtf --method stringtie2 --output ~/KuPID/sample/stringtie2.small_sample.tpm.csv --scale ~/KuPID/src/small_sample.scale_factors.csv -l 5 -p None
 
 # -a: initial abundance results reported by the chosen quantification method
-# --method: ID method used to quantify transcripts. KuPID can currently be paired with IsoQuant, flair, or stringtie2
+# -m: ID method used to quantify transcripts. KuPID can currently be paired with IsoQuant, flair, or stringtie2
 # -l: number of reads sampled from each annotated isoform during KuPID-quantify
 ```
 
