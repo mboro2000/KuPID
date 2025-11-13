@@ -133,5 +133,5 @@ done
 <h4 align="left">Analyze Quantification Results</h4>
 
 ```
-python ~/KuPID/sample/analyze_quantification.py ~/KuPID/sample/small_sample.true_tpm.csv ~/KuPID/sample/stringtie2.small_sample.tpm.csv ~/KuPID/sample/stringtie2.small_sample.KuPID.scaled_tpm.csv
+python ~/KuPID/sample/analyze_quantification.py -t ~/KuPID/sample/small_sample.true_tpm.csv -e ~/KuPID/sample/stringtie2.small_sample.tpm.csv -k ~/KuPID/sample/stringtie2.small_sample.KuPID.scaled_tpm.csv
 ```
