@@ -21,15 +21,15 @@ except getopt.error as err:
 for opt, arg in opts:
     if opt in ('-a', '--abundances'):
         input = arg
-    else if opt in ('-m', '--method'):
+    elif opt in ('-m', '--method'):
         method = arg
-    else if opt in ('-o', '--output'):
+    elif opt in ('-o', '--output'):
         output = arg
-    else if opt in ('-s', '--scale'):
+    elif opt in ('-s', '--scale'):
         scale = arg
-    else if opt in ('-l', '--l'):
+    elif opt in ('-l', '--l'):
         l = arg
-    else if opt in ('-p', '--preprocessing'):
+    elif opt in ('-p', '--preprocessing'):
         process = arg
 
 if method == 'stringtie2':
