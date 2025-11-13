@@ -103,9 +103,9 @@ done
 
 ```
 ### scale quantification results for KuPID reads
-python ~/scale_quantification_results.py -a ~/KuPID/sample/stringtie2.small_sample.quantify.gtf --method stringtie2 --output ~/KuPID/sample/stringtie2.small_sample.KuPID.scaled_tpm.csv --scale ~/KuPID/src/small_sample.scale_factors.csv -l 5 -p KuPID
+python ~/scale_quantification.py -a ~/KuPID/sample/stringtie2.small_sample.quantify.gtf --method stringtie2 --output ~/KuPID/sample/stringtie2.small_sample.KuPID.scaled_tpm.csv --scale ~/KuPID/src/small_sample.scale_factors.csv -l 5 -p KuPID
 ### adjust quantifcation results of non-processed reads to only show abundances of known reference transcripts
-python ~/scale_quantification_results.py -a ~/KuPID/sample/stringtie2.small_sample.quantify.gtf --method stringtie2 --output ~/KuPID/sample/stringtie2.small_sample.tpm.csv --scale ~/KuPID/src/small_sample.scale_factors.csv -l 5 -p None
+python ~/scale_quantification.py -a ~/KuPID/sample/stringtie2.small_sample.quantify.gtf --method stringtie2 --output ~/KuPID/sample/stringtie2.small_sample.tpm.csv --scale ~/KuPID/src/small_sample.scale_factors.csv -l 5 -p None
 
 # -a: initial abundance results reported by the chosen quantification method
 # --method: ID method used to quantify transcripts. KuPID can currently be paired with IsoQuant, flair, or stringtie2
