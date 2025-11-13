@@ -99,6 +99,16 @@ done
 
 ```
 
+<h4 align="left">Scale Quantification Results (Required for KuPID-quantify)</h4>
+
+```
+python ~/scale_quantification_results.py -a /usr1/mborowia/10_10_KuPID/stringtie2/$method.$t.n$a.guided.gtf --method stringtie2 --output /usr1/mborowia/10_10_KuPID/estimated_tpm/IsoQuant/$method.$t.n$a.guided.scaled_tpm.csv --scale /usr1/mborowia/KuPID/src/10_10/10_10.$method.$t.n$a.scale_factors.csv -l 5 -p KuPID
+
+python ~/scale_quantification_results.py -a /usr1/mborowia/10_10_KuPID/stringtie2/$method.$t.n$a.guided.gtf --method stringtie2 --output /usr1/mborowia/10_10_KuPID/estimated_tpm/IsoQuant/$method.$t.n$a.guided.scaled_tpm.csv --scale /usr1/mborowia/KuPID/src/10_10/10_10.$method.$t.n$a.scale_factors.csv -l 5 -p None
+```
+
+'abundances', 'method', 'output', 'scale', 'l'
+
 <h4 align="left">Analyze Discovery Results</h4>
 
 ```
