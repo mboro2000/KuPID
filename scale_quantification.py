@@ -11,25 +11,24 @@ l = None
 process = None
 
 argv = sys.argv[1:]
-options = 'amoslp'
-long_options = ['abundances', 'method', 'output', 'scale', 'l', 'preprocessing']
+options = 'a:m:o:s:l:p:'
 try:
-    opts, args = getopt.getopt(argv, options, long_options)
+    opts, args = getopt.getopt(argv, options)
 except getopt.error as err:
     print(str(err))
 
 for opt, arg in opts:
-    if opt in ('-a', '--abundances'):
+    if opt == 'a':
         input = arg
-    elif opt in ('-m', '--method'):
+    elif opt == '-m':
         method = arg
-    elif opt in ('-o', '--output'):
+    elif opt == '-o':
         output = arg
-    elif opt in ('-s', '--scale'):
+    elif opt == '-s':
         scale = arg
-    elif opt in ('-l', '--l'):
+    elif opt == '-l':
         l = arg
-    elif opt in ('-p', '--preprocessing'):
+    elif opt == '-p':
         process = arg
 
 if method == 'stringtie2':
@@ -68,6 +67,7 @@ if method == 'IsoQuant':
 
 if process == 'KuPID':
     scale = pd.read_csv(scale_path)
+    print(scale['Transcript'].str.split("|"))
     scale['Transcript'] = scale['Transcript'].str.split("|").apply(lambda x: x[0])
     scaled = pd.merge(df, scale, on='Transcript', how='outer')
     scaled.fillna(0, inplace=True)
