@@ -1,14 +1,33 @@
 import pandas as pd
 import numpy as np
-import sys
+import sys, getopt
 from Bio import SeqIO
 
-input = sys.argv[1]
-method = sys.argv[2]
-output = sys.argv[3]
-scale_path = sys.argv[4]
-mode = sys.argv[5]
-l = int(sys.argv[6])
+input = None
+method = None
+output = None
+scale_path = None
+l = None
+
+argv = sys.argv[1:]
+options = 'amosl'
+long_options = ['abundances', 'method', 'output', 'scale', 'l']
+try:
+    opts, args = getopt.getopt(args, options, long_options)
+except getopt.error as err:
+    print(str(err))
+
+for opt, arg in opts:
+    if opt in ('-a', '--abundances'):
+        input = arg
+    else if opt in ('-m', '--method'):
+        method = arg
+    else if opt in ('-o', '--output'):
+        output = arg
+    else if opt in ('-s', '--scale'):
+        scale = arg
+    else if opt in ('l', '--l'):
+        l = arg
 
 if method == 'stringtie2':
     dict = {}
@@ -18,14 +37,13 @@ if method == 'stringtie2':
     for line in f.readlines():
         data = line.split("\t")
         if len(data) > 2:
-            if data[2] == 'transcript':
-                if len(data[8].split("reference_id ")) > 1:
-                    rows += 1
-                    tid = data[8].split("reference_id ")[1].split('"')[1]
-                    tpm = float(data[8].split("TPM ")[1].split('"')[1])
-                    dict['row_' + str(rows)] = [tid, tpm]
+        if data[2] == 'transcript':
+            if len(data[8].split("reference_id ")) > 1:
+                rows += 1
+                tid = data[8].split("reference_id ")[1].split('"')[1]
+                tpm = float(data[8].split("TPM ")[1].split('"')[1])
+                dict['row_' + str(rows)] = [tid, tpm]
     df = pd.DataFrame.from_dict(dict, orient='index', columns=['Transcript', 'TPM_all'])
-
     total_r = df['TPM_all'].sum()
     df['TPM'] = 1000000 * df['TPM_all'] / total_r
     df = df[df['TPM'] > 0]
@@ -33,10 +51,8 @@ if method == 'stringtie2':
 if method == 'flair':
     df = pd.read_csv(input, sep='\t')
     df['TPM_all'] = df['sample1_condition1_batch1']
-
     total_r = df[df['ids'].str.contains('ENST')]['TPM_all'].sum()
     df['TPM'] = 1000000 * df['TPM_all'] / total_r
-
     df = df[df['ids'].str.contains('ENST')]
     df['Transcript'] = df['ids'].str.split("_").apply(lambda x: x[0])
     df = df[df['TPM'] > 0]
