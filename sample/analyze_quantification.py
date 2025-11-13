@@ -5,20 +5,23 @@ from scipy.stats import spearmanr
 
 true = None
 estimated = None
-KuPID = None
+kupid = None
 
 args = sys.argv[1:]
 options = "tek"
 
 try:
-  opts, args = getopt.getopt(args, options)
-  for opt, arg in opts:
-    if opt == '-t':
-      true = arg
-    elif opt == '-e':
-      estimated = arg
-    elif opt == 'k':
-      KuPID = arg
+  opts, args = getopt.getopt(args, "t:e:k:")
+except getopt.error as err:
+  print(str(err))
+  
+for opt, arg in opts:
+  if opt == '-t':
+    true = arg
+  elif opt == '-e':
+    estimated = arg
+  elif opt == 'k':
+    kupid = arg
 
 true_tpm = pd.read_csv(true)
 estim_tpm = pd.read_csv(estimated)
