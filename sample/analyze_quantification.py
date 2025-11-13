@@ -6,9 +6,7 @@ from scipy.stats import spearmanr
 true = None
 estimated = None
 kupid = None
-
 args = sys.argv[1:]
-options = "tek"
 
 try:
   opts, args = getopt.getopt(args, "t:e:k:")
@@ -20,7 +18,7 @@ for opt, arg in opts:
     true = arg
   elif opt == '-e':
     estimated = arg
-  elif opt == 'k':
+  elif opt == '-k':
     kupid = arg
 
 true_tpm = pd.read_csv(true)
