@@ -40,12 +40,12 @@ if method == 'stringtie2':
     for line in f.readlines():
         data = line.split("\t")
         if len(data) > 2:
-        if data[2] == 'transcript':
-            if len(data[8].split("reference_id ")) > 1:
-                rows += 1
-                tid = data[8].split("reference_id ")[1].split('"')[1]
-                tpm = float(data[8].split("TPM ")[1].split('"')[1])
-                dict['row_' + str(rows)] = [tid, tpm]
+            if data[2] == 'transcript':
+                if len(data[8].split("reference_id ")) > 1:
+                    rows += 1
+                    tid = data[8].split("reference_id ")[1].split('"')[1]
+                    tpm = float(data[8].split("TPM ")[1].split('"')[1])
+                    dict['row_' + str(rows)] = [tid, tpm]
     df = pd.DataFrame.from_dict(dict, orient='index', columns=['Transcript', 'TPM_all'])
     total_r = df['TPM_all'].sum()
     df['TPM'] = 1000000 * df['TPM_all'] / total_r
