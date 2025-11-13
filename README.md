@@ -102,12 +102,15 @@ done
 <h4 align="left">Scale Quantification Results (Required for KuPID-quantify)</h4>
 
 ```
-python ~/scale_quantification_results.py -a /usr1/mborowia/10_10_KuPID/stringtie2/$method.$t.n$a.guided.gtf --method stringtie2 --output /usr1/mborowia/10_10_KuPID/estimated_tpm/IsoQuant/$method.$t.n$a.guided.scaled_tpm.csv --scale /usr1/mborowia/KuPID/src/10_10/10_10.$method.$t.n$a.scale_factors.csv -l 5 -p KuPID
+### scale quantification results for KuPID reads
+python ~/scale_quantification_results.py -a ~/KuPID/sample/stringtie2.small_sample.quantify.gtf --method stringtie2 --output ~/KuPID/sample/stringtie2.small_sample.KuPID.scaled_tpm.csv --scale ~/KuPID/src/small_sample.scale_factors.csv -l 5 -p KuPID
+### adjust quantifcation results of non-processed reads to only show abundances of known reference transcripts
+python ~/scale_quantification_results.py -a ~/KuPID/sample/stringtie2.small_sample.quantify.gtf --method stringtie2 --output ~/KuPID/sample/stringtie2.small_sample.tpm.csv --scale ~/KuPID/src/small_sample.scale_factors.csv -l 5 -p None
 
-python ~/scale_quantification_results.py -a /usr1/mborowia/10_10_KuPID/stringtie2/$method.$t.n$a.guided.gtf --method stringtie2 --output /usr1/mborowia/10_10_KuPID/estimated_tpm/IsoQuant/$method.$t.n$a.guided.scaled_tpm.csv --scale /usr1/mborowia/KuPID/src/10_10/10_10.$method.$t.n$a.scale_factors.csv -l 5 -p None
+# -a: initial abundance results reported by the chosen quantification method
+# --method: ID method used to quantify transcripts. KuPID can currently be paired with IsoQuant, flair, or stringtie2
+# -l: number of reads sampled from each annotated isoform during KuPID-quantify
 ```
-
-'abundances', 'method', 'output', 'scale', 'l'
 
 <h4 align="left">Analyze Discovery Results</h4>
 
