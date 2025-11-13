@@ -25,7 +25,7 @@ for opt, arg in opts:
 
 true_tpm = pd.read_csv(true)
 estim_tpm = pd.read_csv(estimated)
-KuPID_tpm = pd.read_csv(KuPID)
+KuPID_tpm = pd.read_csv(kupid)
 
 both = pd.merge(true_tpm, estim_tpm, on='Transcript', how='outer')
 both_KuPID = pd.merge(true_tpm, KuPID_tpm, on='Transcript', how='outer')
