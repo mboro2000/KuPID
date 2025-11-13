@@ -8,10 +8,11 @@ method = None
 output = None
 scale_path = None
 l = None
+process = None
 
 argv = sys.argv[1:]
-options = 'amosl'
-long_options = ['abundances', 'method', 'output', 'scale', 'l']
+options = 'amoslp'
+long_options = ['abundances', 'method', 'output', 'scale', 'l', 'preprocessing']
 try:
     opts, args = getopt.getopt(args, options, long_options)
 except getopt.error as err:
@@ -26,8 +27,10 @@ for opt, arg in opts:
         output = arg
     else if opt in ('-s', '--scale'):
         scale = arg
-    else if opt in ('l', '--l'):
+    else if opt in ('-l', '--l'):
         l = arg
+    else if opt in ('-p', '--preprocessing'):
+        process = arg
 
 if method == 'stringtie2':
     dict = {}
@@ -63,14 +66,18 @@ if method == 'IsoQuant':
     df['Transcript'] = df['#feature_id']
     df = df[df['TPM'] > 0]
 
-scale = pd.read_csv(scale_path)
-scale['Transcript'] = scale['Transcript'].str.split("|").apply(lambda x: x[0])
-scaled = pd.merge(df, scale, on='Transcript', how='outer')
-scaled.fillna(0, inplace=True)
-li = scaled[(scaled['TPM'] > 0) & (scaled['Group Count'] >= l)]['TPM'].min()
-scaled['Scaled Ai'] = np.where(scaled['Group Count'] >= l, (scaled['TPM'] - li) + li*scaled['Scale'], scaled['TPM'])
-scaled['Scaled Ai'] = np.where(scaled['Scaled Ai'] < 0, 0, scaled['Scaled Ai'])
-scaled['Scaled Ai'] = np.where(scaled['TPM'] == 0, 0, scaled['Scaled Ai'])
-total_Ai = scaled['Scaled Ai'].sum()
-scaled['Scaled TPM'] = 1000000 * scaled['Scaled Ai'] / total_Ai
-scaled.to_csv(output)
+if process == 'KuPID':
+    scale = pd.read_csv(scale_path)
+    scale['Transcript'] = scale['Transcript'].str.split("|").apply(lambda x: x[0])
+    scaled = pd.merge(df, scale, on='Transcript', how='outer')
+    scaled.fillna(0, inplace=True)
+    li = scaled[(scaled['TPM'] > 0) & (scaled['Group Count'] >= l)]['TPM'].min()
+    scaled['Scaled Ai'] = np.where(scaled['Group Count'] >= l, (scaled['TPM'] - li) + li*scaled['Scale'], scaled['TPM'])
+    scaled['Scaled Ai'] = np.where(scaled['Scaled Ai'] < 0, 0, scaled['Scaled Ai'])
+    scaled['Scaled Ai'] = np.where(scaled['TPM'] == 0, 0, scaled['Scaled Ai'])
+    total_Ai = scaled['Scaled Ai'].sum()
+    scaled['Scaled TPM'] = 1000000 * scaled['Scaled Ai'] / total_Ai
+    scaled.to_csv(output)
+
+else:
+    df.to_csv(output)
