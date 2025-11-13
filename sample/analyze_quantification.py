@@ -15,9 +15,9 @@ try:
   for opt, arg in opts:
     if opt == '-t':
       true = arg
-    else if opt == '-e':
+    elif opt == '-e':
       estimated = arg
-    else if opt == 'k':
+    elif opt == 'k':
       KuPID = arg
 
 true_tpm = pd.read_csv(true)
