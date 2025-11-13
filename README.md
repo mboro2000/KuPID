@@ -129,3 +129,9 @@ for trial in stringtie2.small_sample stringtie2.small_sample.discovery stringtie
 cat ~/KuPID/sample/gffcompare/$trial.comp_to_novel
 done
 ```
+
+<h4 align="left">Analyze Quantification Results</h4>
+
+```
+python ~/KuPID/sample/analyze_quantification.py ~/KuPID/sample/stringtie2.small_sample.tpm.csv ~/KuPID/sample/stringtie2.small_sample.KuPID.scaled_tpm.csv
+```
