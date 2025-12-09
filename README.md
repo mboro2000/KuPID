@@ -63,6 +63,13 @@ gzip -d Homo_sapiens.GRCh38.dna.chromosome.1.fa.gz
 python edit_heading.py Homo_sapiens.GRCh38.dna.chromosome.1.fa "chr1"
 ```
 
+<h4 align="left">Access sample data</h4>
+
+```
+cd KuPID/sample
+tar -xvzf small_sample.ccs.fasta.tar.gz
+```
+
 <h4 align="left">Apply KuPID</h4>
 
 ```
