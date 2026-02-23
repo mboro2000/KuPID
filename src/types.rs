@@ -17,12 +17,12 @@ pub fn build_sketch(size:i32, kmers:HashMap<i64, Vec<i32>>, seq_len:usize) -> Sk
 
 #[derive(Clone)]
 pub struct Match{
-    pub sample_id:String,
+    pub sample_id:i32,
     pub similarity:f32,
     pub chunk:usize
 }
 
-pub fn build_match(sample_id:String, similarity:f32, chunk:usize) -> Match{
+pub fn build_match(sample_id:i32, similarity:f32, chunk:usize) -> Match{
     Match {
         sample_id: sample_id,
         similarity: similarity,
@@ -47,7 +47,7 @@ pub fn copy_cell(cell: &DpCell) -> DpCell{
 
 pub struct OptChain{
     pub score:i32,
-    pub ref_match:String,
+    pub ref_match:i32,
     pub gap:i32,
     pub query_gap:i32,
     pub ref_gap:i32,
@@ -55,9 +55,9 @@ pub struct OptChain{
 }
 
 pub fn init_chain() -> OptChain{
-    OptChain { score: 0, ref_match: "".to_string(), gap: 0, query_gap: 0, ref_gap: 0, similarity: -1.0 * f32::INFINITY}
+    OptChain { score: 0, ref_match: -1, gap: 0, query_gap: 0, ref_gap: 0, similarity: -1.0 * f32::INFINITY}
 }
 
-pub fn build_chain(score:i32, ref_match:String, gap:i32, query_gap:i32, ref_gap:i32, similarity:f32) -> OptChain{
+pub fn build_chain(score:i32, ref_match:i32, gap:i32, query_gap:i32, ref_gap:i32, similarity:f32) -> OptChain{
     OptChain { score: score, ref_match: ref_match, gap: gap, query_gap: query_gap, ref_gap: ref_gap, similarity: similarity}
 }
