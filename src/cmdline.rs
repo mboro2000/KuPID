@@ -29,9 +29,10 @@ pub struct Cli {
     pub c: f64,
     #[clap(long="mode", default_value = "quantify", help = "Select RNAseq reads for isoform discovery or quantification")]
     pub mode:String,
-    #[clap(short='l', default_value_t = 10, help = "Set the number of reads sampled from each predicted annotated isoform")]
+    #[clap(short='l', default_value_t = 5, help = "Set the number of reads sampled from each predicted annotated isoform")]
     pub l: usize,
-    #[clap(short='z', default_value_t = 100, help = "Set the bp threshold to accept an unmatched 3'/5' region as a novel exon")]
-    pub z: i32
-
+    #[clap(short='g', default_value_t = 100, help = "Set the bp threshold to accept an unmatched 3'/5' region as a novel exon")]
+    pub g: i32,
+    #[clap(short='f', default_value_t = 20, help = "Set the expected length of remaining polyA tails")]
+    pub f: i32
 }
