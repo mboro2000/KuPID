@@ -116,12 +116,12 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<i
                     selected.entry(id.clone()).or_insert(i);
                     *as_reads_shared.write().unwrap() += 1;
                 }
-                else if  opt_chain.query_gap > n + buffer{
+                else if opt_chain.query_overhang > n + buffer{
                     let mut selected = selected_shared.write().unwrap();
                     selected.entry(id.clone()).or_insert(i);
                     *novel_exon_shared.write().unwrap() += 1;       
                 }
-                else if opt_chain.ref_gap > z + buffer{
+                else if opt_chain.ref_overhang > z + buffer{
                     let mut selected = selected_shared.write().unwrap();
                     selected.entry(id.clone()).or_insert(i);
                     *novel_exon_shared.write().unwrap() += 1;
@@ -220,5 +220,3 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<i
     }
 selected_shared
  }
-
-
