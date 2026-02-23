@@ -1,12 +1,16 @@
 use crate::types::*;
 use std::collections::HashMap;
 use std::cmp;
+use std::{thread, time};
 
 //Finds the largest set of colinear matches between a query and reference sketch
 pub fn kmer_chain(q_sketch:&HashMap<i64, Vec<i32>>, r_sketch:&HashMap<i64, Vec<i32>>, m:i32) -> (i32, i32, (i32, i32), (i32, i32)){    
     let mut g_add:Vec<DpCell> = Vec::new();  
     let mut g_not:Vec<DpCell> = Vec::new();  
     let mut anchors:Vec<(i32, i32)> = Vec::new();
+    if q_sketch.len() == 0{
+        println!("No kmers in query");
+    }
     for (kmer, pos) in q_sketch{
         if r_sketch.contains_key(kmer){
             for i in pos{
@@ -15,7 +19,8 @@ pub fn kmer_chain(q_sketch:&HashMap<i64, Vec<i32>>, r_sketch:&HashMap<i64, Vec<i
                 }
             }            
         }
-    }       
+    }     
+
     anchors.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));      
     for i in 0.. anchors.len() as i32{
         let mut add_cell:DpCell = build_cell(1, 0, i, i);
