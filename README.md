@@ -38,8 +38,8 @@ cargo install --path . --root ~/.cargo
 ## Input
 
 To function, KuPID requires the following inputs:
-1. RNAseq sample (-i); should be formatted as a .fasta of the sequenced reads
-2. Reference transcriptome (-r); should be formatted of a .fasta of the reference isoforms
+1. RNAseq sample (-i); Sample reads should by trimmed of any polyA-tails and / or adapters prior to submission. Should be formatted as a .fasta of the sequenced reads
+2. Reference transcriptome (-r); Should be formatted of a .fasta of the reference isoforms
 
 ## Sample Tutorial
 
