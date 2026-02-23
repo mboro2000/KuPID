@@ -49,15 +49,16 @@ pub struct OptChain{
     pub score:i32,
     pub ref_match:i32,
     pub gap:i32,
-    pub query_gap:i32,
-    pub ref_gap:i32,
+    pub query_overhang:i32,
+    pub ref_overhang:i32,
     pub similarity:f32
 }
 
 pub fn init_chain() -> OptChain{
-    OptChain { score: 0, ref_match: -1, gap: 0, query_gap: 0, ref_gap: 0, similarity: -1.0 * f32::INFINITY}
+    OptChain { score: 0, ref_match: -1, gap: 0, query_overhang: 0, ref_overhang: 0, similarity: -1.0 * f32::INFINITY}
 }
 
-pub fn build_chain(score:i32, ref_match:i32, gap:i32, query_gap:i32, ref_gap:i32, similarity:f32) -> OptChain{
-    OptChain { score: score, ref_match: ref_match, gap: gap, query_gap: query_gap, ref_gap: ref_gap, similarity: similarity}
+pub fn build_chain(score:i32, ref_match:i32, gap:i32, query_overhang:i32, ref_overhang:i32, similarity:f32) -> OptChain{
+    OptChain { score: score, ref_match: ref_match, gap: gap, query_overhang: query_overhang, ref_overhang: ref_overhang, similarity: similarity}
 }
+
