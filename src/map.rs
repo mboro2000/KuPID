@@ -31,7 +31,7 @@ pub fn create_kmer_map(ref_sketch:&HashMap<i32, Sketch>, b:usize ) -> HashMap<i6
     kmer_map
 }
 
-pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<i32, Sketch>>>, sample_chunks_shared:Arc<RwLock<Vec<HashMap<i32, String>>>>, b:usize, t: i32, n:i32, k:i32, s:f64, m:i32, e:f32, B:f32, c:f64, mode:String, l:usize, z:i32, transcript_names:&HashMap<i32, String>)
+pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<i32, Sketch>>>, sample_chunks_shared:Arc<RwLock<Vec<HashMap<i32, String>>>>, b:usize, t: i32, n:i32, k:i32, s:f64, m:i32, e:f32, B:f32, c:f64, mode:String, l:usize, z:i32, transcript_names:&HashMap<i32, String>, buffer:i32)
  -> (Arc<RwLock<HashMap<i32, usize>>>) {
     let ref_map:HashMap<i32, Vec<Match>> = HashMap::new(); 
     let selected:HashMap<i32, usize> = HashMap::new();
@@ -40,7 +40,6 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<i
     let novel_exon_reads = 0;
     let max:i64 = (1 << (2*k)) - 1;
     let hs = (max as f64 * s) as i64; 
-    let buffer = 20;
 
     let match_threshold = 1;
 
@@ -220,3 +219,4 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<i
     }
 selected_shared
  }
+
