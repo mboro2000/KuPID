@@ -10,17 +10,18 @@ use std::fs;
 use rand;
 use rand::seq::IndexedRandom;
 
-pub fn create_kmer_map(ref_sketch:&HashMap<String, Sketch>, b:usize ) -> HashMap<i64, HashSet<String>>{
-    let mut kmer_map:HashMap<i64, HashSet<String>> = HashMap::new();
+pub fn create_kmer_map(ref_sketch:&HashMap<i32, Sketch>, b:usize ) -> HashMap<i64, Vec<i32>>{
+
+    let mut kmer_map:HashMap<i64, Vec<i32>> = HashMap::new();
     let mut to_remove:HashSet<i64> = HashSet::new();
 
     for (id, sketch) in ref_sketch.iter(){
         for kmer in sketch.kmers.keys(){
-            if kmer_map.entry(*kmer).or_insert(HashSet::new()).len() >= b{
+            if kmer_map.entry(*kmer).or_insert(Vec::new()).len() >= b{
                 to_remove.insert(*kmer);
             }
             else{
-                kmer_map.entry(*kmer).or_insert(HashSet::new()).insert(id.clone());
+                kmer_map.entry(*kmer).or_insert(Vec::new()).push(id.clone());
             }
         }
     }
@@ -30,13 +31,18 @@ pub fn create_kmer_map(ref_sketch:&HashMap<String, Sketch>, b:usize ) -> HashMap
     kmer_map
 }
 
-pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<String, Sketch>>>, sample_chunks_shared:Arc<RwLock<Vec<HashMap<String, String>>>>, b:usize, t: i32, n:i32, k:i32, s:f64, m:i32, e:f32, B:f32, c:f64, mode:String, l:usize, z:i32)
- -> (Arc<RwLock<HashMap<String, usize>>>) {
-    let ref_map:HashMap<String, Vec<Match>> = HashMap::new(); 
-    let selected:HashMap<String, usize> = HashMap::new();
+pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<i32, Sketch>>>, sample_chunks_shared:Arc<RwLock<Vec<HashMap<i32, String>>>>, b:usize, t: i32, n:i32, k:i32, s:f64, m:i32, e:f32, B:f32, c:f64, mode:String, l:usize, z:i32, transcript_names:&HashMap<i32, String>)
+ -> (Arc<RwLock<HashMap<i32, usize>>>) {
+    let ref_map:HashMap<i32, Vec<Match>> = HashMap::new(); 
+    let selected:HashMap<i32, usize> = HashMap::new();
     let mut handles = vec![];   
     let as_reads = 0;
     let novel_exon_reads = 0;
+    let max:i64 = (1 << (2*k)) - 1;
+    let hs = (max as f64 * s) as i64; 
+    let buffer = 20;
+
+    let match_threshold = 1;
 
     let ref_sketches = ref_sketches_shared.read().unwrap();
     let kmer_map = create_kmer_map(&ref_sketches, b);
@@ -64,20 +70,15 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
             let ref_sketches = ref_sketches_shared.read().unwrap();
             
             for (id, seq) in sample_chunk.iter(){
-                let mut tail_len = 0;
-                let mut chars = seq.chars().rev();
-                let mut c = chars.next().expect("msg");
-                while c=='A' || c=='a'{
-                    tail_len += 1;
-                    c = chars.next().expect("msg");
-                }
-                let adjusted_len = seq.len() as i32 - tail_len;
-                let (size, sketch) = frac_min_hash(&seq, k,s);
+                
+                let adjusted_len = seq.len() as i32;
+                let (size, sketch) = frac_min_hash(&seq, k,s,max, hs);
                 
                 let mut opt_chain = init_chain();                
-                let mut ref_matches:HashMap<String, i32> = HashMap::new();
+                let mut ref_matches:HashMap<i32, i32> = HashMap::new();
                 let mut max_matches = 0;
 
+                // might try querying against the smaller possible transcript sketches instead of against the whole kmer map
                 for kmer in sketch.keys(){
                     if kmer_map.contains_key(kmer){
                         for ref_id in kmer_map.get(kmer).expect("msg"){
@@ -90,8 +91,9 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                     }
                 }
 
+                let mut best_gene = -1;
                 for (ref_id, num_matches) in ref_matches.iter(){
-                    if (*num_matches == max_matches) && (max_matches > 0){
+                    if (*num_matches == max_matches) && (max_matches > match_threshold){
                         let r_sketch = ref_sketches.get(ref_id).expect("msg");
                         let (chain_score, gap, (first_pos_q, first_pos_r), (last_pos_q, last_pos_r)) = chain::kmer_chain(&(sketch),  &r_sketch.kmers, m);
                         let mut ref_gap = 0;
@@ -104,6 +106,7 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                         let sim_score = chain_score as f32 / ((size + r_sketch.size) as f32 - chain_score as f32);
                         if sim_score > opt_chain.similarity{
                             opt_chain = build_chain(chain_score, ref_id.clone(), gap, std::cmp::max(gap_3p, gap_5p), ref_gap, sim_score);
+                            best_gene = ref_id.clone();
                         }
                     }              
                 }
@@ -113,15 +116,15 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                     selected.entry(id.clone()).or_insert(i);
                     *as_reads_shared.write().unwrap() += 1;
                 }
-                else if  opt_chain.query_gap > n{
+                else if  opt_chain.query_gap > n + buffer{
                     let mut selected = selected_shared.write().unwrap();
                     selected.entry(id.clone()).or_insert(i);
-                    *novel_exon_shared.write().unwrap() += 1;          
+                    *novel_exon_shared.write().unwrap() += 1;       
                 }
-                else if opt_chain.ref_gap > z{
+                else if opt_chain.ref_gap > z + buffer{
                     let mut selected = selected_shared.write().unwrap();
                     selected.entry(id.clone()).or_insert(i);
-                    *novel_exon_shared.write().unwrap() += 1; 
+                    *novel_exon_shared.write().unwrap() += 1;
                 }             
                 else{
                     let mut ref_map = ref_map_shared.write().unwrap(); 
@@ -152,14 +155,15 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
                 for read in chosen{
                     selected.entry(read.sample_id.clone()).or_insert(read.chunk);
                 }               
-                scale_outline.push_str(&(iso.clone()+ "," + &matches.len().to_string() + "," + &scale.to_string() + "\n"));
+                scale_outline.push_str(&(iso.to_string()+ "," + &matches.len().to_string() + "," + &scale.to_string() + "\n"));
             }
             else{
                 for read in matches.iter(){
                     selected.entry(read.sample_id.clone()).or_insert(read.chunk);
                 }
                 let scale = matches.len() as f64 / l as f64;
-                scale_outline.push_str(&(iso.clone()+ "," + &matches.len().to_string() + "," + &scale.to_string() + "\n"));
+                let ref_id = transcript_names.get(iso).expect("msg");
+                scale_outline.push_str(&(iso.to_string()+ "," + &matches.len().to_string() + "," + &scale.to_string() + "\n"));
             } 
         }
         fs::write(scale_factor, scale_outline);  
@@ -168,7 +172,7 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     if mode == "discovery".to_string(){
         let mut selected = selected_shared.write().unwrap();
         let mut avg_sq:Vec<i32> = Vec::new();
-        let mut group_avg_sq:HashMap<String, i32> = HashMap::new();
+        let mut group_avg_sq:HashMap<i32, i32> = HashMap::new();
         let sim_ceiling = B * (1.0 - k as f32 *e);
 
         for iso in ref_map.keys(){
@@ -216,4 +220,5 @@ pub fn find_ref_matches(output:String, ref_sketches_shared: Arc<RwLock<HashMap<S
     }
 selected_shared
  }
+
 
