@@ -45,6 +45,11 @@ To function, KuPID requires the following inputs:
 
 To demonstrate KuPID's abilities, we've provided an RNAseq sample of PacBio HiFi reads sequenced from chr1 of the human genome. In addition, we've provided an annotation file of the novel isoforms present in the sample.
 
+To learn more about the parameters required for running KuPID, users can type
+```
+cargo run -- --help
+```
+
 To complete the downstream analysis, users should have access to the following software:
 1. minimap2
 2. stringtie2
