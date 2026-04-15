@@ -11,28 +11,28 @@ pub struct Cli {
     pub input: String,
     #[clap(short='t',long="threads", default_value_t = 3, help = "Set number of threads to use")]
     pub t: i32,
-    #[clap(short='k',long="kmer length", default_value_t = 12, help = "Set kmer length used for sketching")]
+    #[clap(short='k',long="kmer length", default_value_t = 14, help = "Set kmer length used for sketching")]
     pub k: i32,
-    #[clap(short='e',long="Error rate", default_value_t = 0.1, help = "Set the average error rate of the input reads")]
+    #[clap(short='e',long="Error rate", default_value_t = 0.05, help = "Set the average error rate of the input reads")]
     pub e: f64,
     #[clap(short='s',long="Sketch density", default_value_t = 0.1, help = "Set the density of the FracMinHash function")]
     pub s: f64,
-    #[clap(short='b',long="Max density of kmer map bins", default_value_t = 12, help = "Set the maximum num. of isoforms that can map to a given kmer")]
+    #[clap(short='b',long="Max density of kmer map bins", default_value_t = 14, help = "Set the maximum num. of isoforms that can map to a given kmer")]
     pub b: usize,
-    #[clap(short='n',long="Gap between matches", default_value_t = 30, help = "Set the maximum gap allowed in an optimal chain without AS")]
+    #[clap(short='n',long="Min Exon", default_value_t = 30, help = "Set the minimum expected length of an exon in the transcriptome")]
     pub n: i32,  
-    #[clap(short='m',long="Band width", default_value_t = 30, help = "Set the band width of the chaining procedure's dynamic programming table")]
+    #[clap(short='d',long="Median Exon", default_value_t = 130, help = "Set the median expected length of an exon in the transcriptome")]
+    pub d: i32, 
+    #[clap(short='m',long="Band width", default_value_t = 3, help = "Set the band width of the chaining procedure's dynamic programming table")]
     pub m: i32, 
     #[clap(short='B',long="Maximum novel similarity", default_value_t = 0.98, help = "Set the maximum similarity score allowed for a novel read")]
     pub B: f32,
     #[clap(short='c',long="Candidate set size", default_value_t = 1.5, help = "Set the scale factor for the number of ATSS reads chosen")]
     pub c: f64,
-    #[clap(long="mode", default_value = "quantify", help = "Select RNAseq reads for isoform discovery or quantification")]
+    #[clap(long="mode", default_value = "discovery", help = "Select RNAseq reads for isoform discovery ('discovery') or quantification ('quantify')")]
     pub mode:String,
     #[clap(short='l', default_value_t = 5, help = "Set the number of reads sampled from each predicted annotated isoform")]
     pub l: usize,
-    #[clap(short='g', default_value_t = 100, help = "Set the bp threshold to accept an unmatched 3'/5' region as a novel exon")]
-    pub g: i32,
-    #[clap(short='f', default_value_t = 20, help = "Set the expected length of remaining polyA tails")]
+    #[clap(short='f', default_value_t = 20, help = "Set the expected length of remaining polyA tails / adapters after trimming")]
     pub f: i32
 }
