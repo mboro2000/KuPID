@@ -15,6 +15,10 @@ pub fn build_sketch(size:i32, kmers:HashMap<i64, Vec<i32>>, seq_len:usize) -> Sk
     }
 }
 
+pub fn init_sketch() -> Sketch{
+    Sketch{size:0, kmers:HashMap::new(), seq_len:0}
+}
+
 #[derive(Clone)]
 pub struct Match{
     pub sample_id:i32,
@@ -49,16 +53,18 @@ pub struct OptChain{
     pub score:i32,
     pub ref_match:i32,
     pub gap:i32,
-    pub query_overhang:i32,
-    pub ref_overhang:i32,
+    pub query_overhang_3p:i32,
+    pub query_overhang_5p:i32,
+    pub unmatched_5p:(i32, i32, i32),
+    pub unmatched_3p:(i32, i32, i32),
     pub similarity:f32
 }
 
 pub fn init_chain() -> OptChain{
-    OptChain { score: 0, ref_match: -1, gap: 0, query_overhang: 0, ref_overhang: 0, similarity: -1.0 * f32::INFINITY}
+    OptChain { score: 0, ref_match: -1, gap: 0, query_overhang_3p: 0, query_overhang_5p: 0, unmatched_5p: (0,0,0), unmatched_3p: (0,0,0), similarity: -1.0 * f32::INFINITY}
 }
 
-pub fn build_chain(score:i32, ref_match:i32, gap:i32, query_overhang:i32, ref_overhang:i32, similarity:f32) -> OptChain{
-    OptChain { score: score, ref_match: ref_match, gap: gap, query_overhang: query_overhang, ref_overhang: ref_overhang, similarity: similarity}
+pub fn build_chain(score:i32, ref_match:i32, gap:i32, query_overhang_3p:i32, query_overhang_5p:i32, unmatched_5p:(i32,i32,i32), unmatched_3p:(i32,i32,i32), similarity:f32) -> OptChain{
+    OptChain { score: score, ref_match: ref_match, gap: gap, query_overhang_3p: query_overhang_3p, query_overhang_5p:query_overhang_5p, unmatched_5p:unmatched_5p, unmatched_3p:unmatched_3p, similarity: similarity}
 }
 
